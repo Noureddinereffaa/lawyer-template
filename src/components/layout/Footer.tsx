@@ -131,6 +131,7 @@ export default function Footer({ config }: FooterProps) {
           <div style={{ display: "flex", gap: "1.5rem" }}>
             <Link href="/privacy" style={{ color: "rgba(255,255,255,.4)", fontSize: ".82rem" }}>سياسة الخصوصية</Link>
             <Link href="/terms"   style={{ color: "rgba(255,255,255,.4)", fontSize: ".82rem" }}>شروط الاستخدام</Link>
+            <Link href="/legal"   style={{ color: "rgba(255,255,255,.4)", fontSize: ".82rem" }}>الإشعارات القانونية</Link>
           </div>
         </div>
       </div>
