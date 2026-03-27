@@ -1,10 +1,10 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse, type NextRequest, type NextFetchEvent } from 'next/server'
 import { triggerReminderCheck } from '@/lib/reminder-engine'
 
-export async function middleware(request: NextRequest) {
-  // Lazy reminder check — fire and forget, throttled internally
-  triggerReminderCheck();
+export async function middleware(request: NextRequest, event: NextFetchEvent) {
+  // Lazy reminder check — use waitUntil to prevent Vercel Edge from killing the background promise
+  triggerReminderCheck(event);
   let supabaseResponse = NextResponse.next({
     request: {
       headers: request.headers,

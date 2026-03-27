@@ -23,19 +23,25 @@ import { clientConfig } from "../../config/client.config";
 const THROTTLE_MS = 10 * 60 * 1000; // 10 minutes
 let lastCheckTimestamp = 0;
 
+import { type NextFetchEvent } from "next/server";
+
 /**
  * Called from middleware on every request.
  * Non-blocking: fires and forgets, never delays the user's response.
  */
-export function triggerReminderCheck(): void {
+export function triggerReminderCheck(event?: NextFetchEvent): void {
   const now = Date.now();
   if (now - lastCheckTimestamp < THROTTLE_MS) return; // throttled
   lastCheckTimestamp = now;
 
-  // Fire and forget — don't await
-  processReminders().catch((err) =>
+  const promise = processReminders().catch((err) =>
     console.error("[Reminder Engine] Error:", err)
   );
+  
+  // Prevent Vercel from killing the background promise
+  if (event?.waitUntil) {
+    event.waitUntil(promise);
+  }
 }
 
 /**
@@ -55,7 +61,6 @@ async function processReminders(): Promise<{ sent: number }> {
     .from("appointments")
     .select("*")
     .eq("date", tomorrowStr)
-    .eq("meeting_mode", "online")
     .neq("status", "cancelled")
     .not("client_email", "is", null)
     .or("reminder_24h_sent.is.null,reminder_24h_sent.eq.false");
@@ -72,6 +77,7 @@ async function processReminders(): Promise<{ sent: number }> {
           date: appt.date,
           timeSlot: appt.time_slot,
           consultationType: label,
+          meetingMode: appt.meeting_mode || "in_person",
           meetingCode: appt.meeting_code,
           reminderType: "24h",
         });
@@ -98,7 +104,6 @@ async function processReminders(): Promise<{ sent: number }> {
     .from("appointments")
     .select("*")
     .eq("date", todayStr)
-    .eq("meeting_mode", "online")
     .neq("status", "cancelled")
     .not("client_email", "is", null)
     .or("reminder_1h_sent.is.null,reminder_1h_sent.eq.false");
@@ -118,6 +123,7 @@ async function processReminders(): Promise<{ sent: number }> {
           date: appt.date,
           timeSlot: appt.time_slot,
           consultationType: label,
+          meetingMode: appt.meeting_mode || "in_person",
           meetingCode: appt.meeting_code,
           reminderType: "1h",
         });

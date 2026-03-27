@@ -3,7 +3,12 @@ import { clientConfig } from "../../config/client.config";
 
 const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy_123");
 const siteUrl = clientConfig.seo.siteUrl;
-const fromEmail = `${clientConfig.officeName} <noreply@${siteUrl.replace("https://", "")}>`;
+
+// Resend strict policy: You can only send from a verified domain.
+// If no verified domain email is provided in .env, fallback to Resend's testing email
+const fallbackEmail = "onboarding@resend.dev";
+const senderEmail = process.env.RESEND_FROM_EMAIL || fallbackEmail;
+const fromEmail = `${clientConfig.officeName} <${senderEmail}>`;
 
 // ── Email template wrapper ────────────────────────────────────────────────────
 function emailTemplate(content: string): string {
@@ -111,14 +116,37 @@ export async function sendMeetingReminder(data: {
   date: string;
   timeSlot: string;
   consultationType: string;
-  meetingCode: string;
   reminderType: "24h" | "1h";
+  meetingMode: string;
+  meetingCode?: string;
 }) {
   if (!data.clientEmail) return;
 
+  const modeText = data.meetingMode === "online" ? "أونلاين" : "حضوري";
   const urgency = data.reminderType === "1h"
-    ? { subject: "⏰ موعدك أونلاين بعد ساعة واحدة!", color: "#e53e3e", text: "بعد ساعة واحدة فقط" }
-    : { subject: "📅 تذكير: موعدك أونلاين غداً", color: "#c9a84c", text: "غداً" };
+    ? { subject: `⏰ موعدك ال${modeText} بعد ساعة واحدة!`, color: "#e53e3e", text: "بعد ساعة واحدة فقط" }
+    : { subject: `📅 تذكير: موعدك ال${modeText} غداً`, color: "#c9a84c", text: "غداً" };
+
+  const meetingDetailsBlock = data.meetingMode === "online" 
+    ? `
+      <div style="background:#1a3c5e;border-radius:10px;padding:16px;text-align:center;margin:16px 0;">
+        <p style="color:rgba(255,255,255,.8);margin:0 0 6px;font-size:13px;">رمز الاجتماع:</p>
+        <p style="color:#fff;font-size:28px;font-weight:800;letter-spacing:6px;margin:0;">${data.meetingCode}</p>
+      </div>
+      <div style="text-align:center;margin:20px 0;">
+        <a href="${siteUrl}/meeting" style="display:inline-block;background:linear-gradient(135deg,#1a3c5e,#2a5c8e);color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">
+          الدخول لغرفة الاجتماعات
+        </a>
+      </div>
+      <p style="color:#888;font-size:12px;text-align:center;">تأكد من أن الكاميرا والميكروفون جاهزان قبل وقت الموعد.</p>
+    `
+    : `
+      <div style="background:#f0f4f8;border-radius:10px;padding:16px;text-align:center;margin:16px 0;border:1px solid #e2e8f0;">
+        <p style="color:#1a3c5e;margin:0 0 6px;font-size:14px;font-weight:600;">📍 عنوان المكتب:</p>
+        <p style="color:#4a5568;font-size:15px;margin:0;">${clientConfig.contact.address}</p>
+      </div>
+      <p style="color:#888;font-size:12px;text-align:center;">يرجى الحضور قبل الموعد بـ 10 دقائق لضمان تنظيم الاستشارات.</p>
+    `;
 
   await resend.emails.send({
     from: fromEmail,
@@ -132,7 +160,7 @@ export async function sendMeetingReminder(data: {
       <p style="text-align:center;color:${urgency.color};font-weight:700;font-size:16px;">موعدك ${urgency.text}!</p>
       
       <p>السيد/ة <strong>${data.clientName}</strong>،</p>
-      <p>نذكّرك بموعد استشارتك القانونية أونلاين:</p>
+      <p>نذكّرك بموعد استشارتك القانونية ال${modeText}:</p>
 
       <table style="width:100%;border-collapse:collapse;margin:16px 0;">
         <tr><td style="padding:10px 12px;border:1px solid #e2e8f0;background:#f0f4f8;font-weight:600;width:40%;">📅 التاريخ</td><td style="padding:10px 12px;border:1px solid #e2e8f0;">${data.date}</td></tr>
@@ -140,18 +168,7 @@ export async function sendMeetingReminder(data: {
         <tr><td style="padding:10px 12px;border:1px solid #e2e8f0;background:#f0f4f8;font-weight:600;">⚖️ الاستشارة</td><td style="padding:10px 12px;border:1px solid #e2e8f0;">${data.consultationType}</td></tr>
       </table>
 
-      <div style="background:#1a3c5e;border-radius:10px;padding:16px;text-align:center;margin:16px 0;">
-        <p style="color:rgba(255,255,255,.8);margin:0 0 6px;font-size:13px;">رمز الاجتماع:</p>
-        <p style="color:#fff;font-size:28px;font-weight:800;letter-spacing:6px;margin:0;">${data.meetingCode}</p>
-      </div>
-
-      <div style="text-align:center;margin:20px 0;">
-        <a href="${siteUrl}/meeting" style="display:inline-block;background:linear-gradient(135deg,#1a3c5e,#2a5c8e);color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">
-          الدخول لغرفة الاجتماعات
-        </a>
-      </div>
-
-      <p style="color:#888;font-size:12px;text-align:center;">تأكد من أن الكاميرا والميكروفون جاهزان قبل وقت الموعد.</p>
+      ${meetingDetailsBlock}
     `),
   });
 }
