@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const SETTINGS_ID = "00000000-0000-0000-0000-000000000001";
 
 // All public pages that use settings data — must all be revalidated

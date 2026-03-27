@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { clientConfig as defaultConfig, ClientConfig } from "../../../../../config/client.config";
 
 import { IdentityTab, ThemeTab } from "@/components/admin/settings/BrandTabs";
@@ -57,21 +56,29 @@ export default function SettingsPage() {
   const [saved,     setSaved]     = useState<ClientConfig | null>(null); // last-saved snapshot
   const [activeTab, setActiveTab] = useState("identity");
   const [saveMsg,   setSaveMsg]   = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const supabase = createClient();
 
   const hasUnsaved = config && saved && JSON.stringify(config) !== JSON.stringify(saved);
 
-  // ─── Load ──────────────────────────────────────────────────────────────────
+  // ─── Load via API (bypasses RLS and Vercel cache) ─────────────────────────
   const loadSettings = useCallback(async () => {
     setFetching(true);
-    const { data } = await supabase.from("settings").select("config_data").single();
-    const merged = data?.config_data && Object.keys(data.config_data).length > 0
-      ? deepMergeConfig(data.config_data)
-      : { ...defaultConfig };
-    setConfig(merged);
-    setSaved(merged);
-    setFetching(false);
-  }, [supabase]);
+    try {
+      const res = await fetch("/api/settings?t=" + Date.now(), { cache: "no-store" });
+      const { config_data } = await res.json();
+      const merged = config_data && Object.keys(config_data).length > 0
+        ? deepMergeConfig(config_data)
+        : { ...defaultConfig };
+      
+      setConfig(merged);
+      setSaved(merged);
+    } catch(e) {
+      console.error("Failed to load settings:", e);
+      setConfig({ ...defaultConfig });
+      setSaved({ ...defaultConfig });
+    } finally {
+      setFetching(false);
+    }
+  }, []);
 
   useEffect(() => { loadSettings(); }, [loadSettings]);
 

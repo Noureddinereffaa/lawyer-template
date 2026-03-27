@@ -1,12 +1,17 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { createServerSupabaseClient } from "./supabase/server";
 import { clientConfig as defaultConfig, ClientConfig } from "../../config/client.config";
 
 /**
  * Fetches settings from Supabase and deep-merges with defaults.
- * Every key — including new CMS keys like hero, about, trustBar,
- * testimonials — is guaranteed to exist even if not yet saved to DB.
+ * `noStore()` is called to opt-out of Next.js's automatic fetch cache
+ * so that every request always gets fresh data from Supabase — both
+ * on localhost and on Vercel production.
  */
 export async function getSettings(): Promise<ClientConfig> {
+  // ⚠️ CRITICAL: Prevent Next.js from caching this fetch on Vercel
+  noStore();
+
   try {
     const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase
