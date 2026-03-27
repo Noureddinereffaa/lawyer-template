@@ -177,40 +177,42 @@ export default function MeetingRoomPage() {
     );
   }
 
-  // ── VIDEO ROOM (Daily.co) ──
-  const roomName = `meet-${code}`;
-  const dailyDomain = process.env.NEXT_PUBLIC_DAILY_DOMAIN?.replace("https://", "") || "lawyer.daily.co";
+  // ── VIDEO ROOM (Jitsi Meet - Opened in new tab to bypass 5-min limit) ──
+  const roomName = `lawyer-meet-${code}`;
+  const jitsiUrl = `https://meet.jit.si/${roomName}`;
 
   return (
     <>
       <style>{`
-        .video-room { height: 100vh; display: flex; flex-direction: column; background: #0d2340; }
-        .video-header { display: flex; align-items: center; justify-content: space-between; padding: .75rem 1.5rem; background: rgba(0,0,0,.3); color: #fff; }
-        .video-header .live-badge { display: flex; align-items: center; gap: .5rem; background: #e53e3e; padding: .35rem .8rem; border-radius: 20px; font-size: .82rem; font-weight: 700; }
-        .video-header .live-dot { width: 8px; height: 8px; background: #fff; border-radius: 50%; animation: blink 1.5s ease-in-out infinite; }
-        @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
-        .daily-frame { flex: 1; border: none; width: 100%; }
+        .video-room { min-height: 100vh; display: flex; flex-direction: column; background: linear-gradient(160deg, #0d2340 0%, #1a3c5e 50%, #2a5c8e 100%); padding: 2rem; align-items: center; justify-content: center; }
+        .success-card { background: #fff; border-radius: 20px; padding: 3rem 2.5rem; max-width: 500px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+        .pulse-ring-green { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #38a169; margin: 0 auto 1.5rem; display: flex; align-items: center; justify-content: center; animation: pulseRingGreen 2s ease-in-out infinite; }
+        @keyframes pulseRingGreen { 0%,100% { box-shadow: 0 0 0 0 rgba(56,161,105,.3); } 50% { box-shadow: 0 0 0 15px rgba(56,161,105,0); } }
       `}</style>
       <div className="video-room">
-        <div className="video-header">
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-            <span style={{ fontSize: "1.2rem" }}>⚖️</span>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: ".95rem" }}>استشارة قانونية — {meetingData?.type}</div>
-              <div style={{ fontSize: ".78rem", opacity: .7 }}>{meetingData?.clientName}</div>
-            </div>
+        <div className="success-card">
+          <div className="pulse-ring-green">
+            <span style={{ fontSize: "2rem" }}>🎥</span>
           </div>
-          <div className="live-badge">
-            <div className="live-dot" />
-            مباشر
+          <h2 style={{ color: "#1a3c5e", marginBottom: ".5rem" }}>المحامي في انتظارك</h2>
+          <p style={{ color: "#555", fontSize: ".95rem", marginBottom: "2rem", lineHeight: "1.6" }}>
+            الجلسة جاهزة الآن. يرجى الضغط على الزر أدناه للدخول إلى قاعة الفيديو الآمنة. 
+            <br />
+            <small style={{ color: "#888" }}>(ستفتح القاعة في نافذة جديدة لضمان أفضل جودة)</small>
+          </p>
+
+          <a href={jitsiUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ display: "block", background: "#38a169", borderColor: "#38a169", padding: "1rem", fontSize: "1.1rem" }}>
+            دخول قاعة الفيديو الآن
+          </a>
+          
+          <div style={{ marginTop: "1.5rem" }}>
+            <span style={{ fontSize: ".85rem", color: "#888" }}>هل انتهيت من المقابلة؟</span>
+            <br />
+            <Link href="/" style={{ color: "#1a3c5e", fontSize: ".9rem", fontWeight: "bold", textDecoration: "underline", display: "inline-block", marginTop: ".5rem" }}>
+              العودة للرئيسية
+            </Link>
           </div>
         </div>
-        <iframe
-          className="daily-frame"
-          src={`https://${dailyDomain}/${roomName}`}
-          allow="camera; microphone; fullscreen; display-capture; autoplay"
-          allowFullScreen
-        />
       </div>
     </>
   );

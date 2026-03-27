@@ -59,43 +59,6 @@ export async function POST(req: Request) {
       case "start":
         newMeetingStatus = "live";
         newAppointmentStatus = "confirmed";
-
-        // Try to create a Daily.co room for this meeting
-        const dailyApiKey = process.env.DAILY_API_KEY;
-        if (dailyApiKey) {
-          try {
-            // First fetch the meeting code
-            const { data: mtgData } = await supabase
-              .from("appointments")
-              .select("meeting_code")
-              .eq("id", appointmentId)
-              .single();
-
-            if (mtgData?.meeting_code) {
-              const roomName = `meet-${mtgData.meeting_code}`;
-              await fetch("https://api.daily.co/v1/rooms", {
-                method: "POST",
-                headers: {
-                  "Authorization": `Bearer ${dailyApiKey}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  name: roomName,
-                  properties: {
-                    exp: Math.floor(Date.now() / 1000) + 7200, // 2 hours expiry
-                    enable_prejoin_ui: false, // Bypass prejoin since we have custom waiting room
-                    enable_screenshare: true,
-                    enable_chat: true,
-                  },
-                }),
-              });
-              console.log(`[Daily.co] Created/Prepared room: ${roomName}`);
-            }
-          } catch (err) {
-            console.error("[Daily.co] Failed to create room:", err);
-            // Non-fatal, let the DB update proceed
-          }
-        }
         break;
       case "end":
         newMeetingStatus = "ended";

@@ -42,12 +42,11 @@ export default function AppointmentsPage() {
   };
 
   const startMeeting = async (id: string, code: string) => {
-    // 1. Tell API to create the room and update DB
+    // 1. Tell API to update DB status
     await updateMeetingStatus(id, "live", "confirmed", "start");
     
-    // 2. Open meeting in new tab
-    const dailyDomain = process.env.NEXT_PUBLIC_DAILY_DOMAIN?.replace("https://", "") || "lawyer.daily.co";
-    window.open(`https://${dailyDomain}/meet-${code}`, "_blank");
+    // 2. Open Jitsi meeting in new tab (Bypasses 5-min iframe limit)
+    window.open(`https://meet.jit.si/lawyer-meet-${code}`, "_blank");
   };
 
   const endMeeting = async (id: string) => {
@@ -173,8 +172,7 @@ export default function AppointmentsPage() {
                         {a.meeting_mode === "online" && a.meeting_status === "live" && (
                           <>
                             <button className="btn btn-outline" onClick={() => {
-                                const dailyDomain = process.env.NEXT_PUBLIC_DAILY_DOMAIN?.replace("https://", "") || "lawyer.daily.co";
-                                window.open(`https://${dailyDomain}/meet-${a.meeting_code}`, "_blank");
+                                window.open(`https://meet.jit.si/lawyer-meet-${a.meeting_code}`, "_blank");
                               }}
                               style={{ padding: ".3rem .7rem", fontSize: ".8rem" }}>
                               🔗 فتح الغرفة
