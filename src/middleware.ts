@@ -1,7 +1,10 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { triggerReminderCheck } from '@/lib/reminder-engine'
 
 export async function middleware(request: NextRequest) {
+  // Lazy reminder check — fire and forget, throttled internally
+  triggerReminderCheck();
   let supabaseResponse = NextResponse.next({
     request: {
       headers: request.headers,
