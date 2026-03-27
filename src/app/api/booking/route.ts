@@ -25,16 +25,20 @@ export async function POST(req: Request) {
 
     const supabase = await createServerSupabaseClient();
 
-    // 1. Check if the slot is blocked
-    const { data: blocked } = await supabase
-      .from("blocked_slots")
-      .select("date")
-      .eq("date", date)
-      .eq("time_slot", timeSlot)
-      .single();
+    // 1. Check if the slot is blocked (optional table — skip if not present)
+    try {
+      const { data: blocked } = await supabase
+        .from("blocked_slots")
+        .select("date")
+        .eq("date", date)
+        .eq("time_slot", timeSlot)
+        .single();
 
-    if (blocked) {
-      return NextResponse.json({ error: "هذا الوقت غير متاح حالياً" }, { status: 400 });
+      if (blocked) {
+        return NextResponse.json({ error: "هذا الوقت غير متاح حالياً" }, { status: 400 });
+      }
+    } catch {
+      // blocked_slots table may not exist — skip check
     }
 
     // 2. Check if an appointment already exists for this exact time and date
@@ -95,7 +99,10 @@ export async function POST(req: Request) {
 
     if (insertError) {
       console.error("Booking Error:", insertError);
-      return NextResponse.json({ error: "حدث خطأ في النظام، يرجى المحاولة لاحقاً" }, { status: 500 });
+      return NextResponse.json({ 
+        error: "حدث خطأ في النظام، يرجى المحاولة لاحقاً",
+        debug: { message: insertError.message, code: insertError.code, details: insertError.details, hint: insertError.hint }
+      }, { status: 500 });
     }
 
     const consultationLabel = clientConfig.booking.consultationTypes.find(c => c.id === type)?.label || type;
