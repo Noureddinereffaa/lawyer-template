@@ -41,7 +41,8 @@ export default function AppointmentsPage() {
   const startMeeting = (id: string, code: string) => {
     updateMeetingStatus(id, "live", "confirmed");
     // Open meeting in new tab
-    window.open(`https://meet.jit.si/lawyer-meet-${code}`, "_blank");
+    const dailyDomain = process.env.NEXT_PUBLIC_DAILY_DOMAIN?.replace("https://", "") || "lawyer.daily.co";
+    window.open(`https://${dailyDomain}/meet-${code}`, "_blank");
   };
 
   const endMeeting = (id: string) => {
@@ -166,7 +167,10 @@ export default function AppointmentsPage() {
                         )}
                         {a.meeting_mode === "online" && a.meeting_status === "live" && (
                           <>
-                            <button className="btn btn-outline" onClick={() => window.open(`https://meet.jit.si/lawyer-meet-${a.meeting_code}`, "_blank")}
+                            <button className="btn btn-outline" onClick={() => {
+                                const dailyDomain = process.env.NEXT_PUBLIC_DAILY_DOMAIN?.replace("https://", "") || "lawyer.daily.co";
+                                window.open(`https://${dailyDomain}/meet-${a.meeting_code}`, "_blank");
+                              }}
                               style={{ padding: ".3rem .7rem", fontSize: ".8rem" }}>
                               🔗 فتح الغرفة
                             </button>

@@ -177,9 +177,9 @@ export default function MeetingRoomPage() {
     );
   }
 
-  // ── VIDEO ROOM (Jitsi Meet) ──
-  const roomName = `lawyer-meet-${code}`;
-  const jitsiDomain = "meet.jit.si";
+  // ── VIDEO ROOM (Daily.co) ──
+  const roomName = `meet-${code}`;
+  const dailyDomain = process.env.NEXT_PUBLIC_DAILY_DOMAIN?.replace("https://", "") || "lawyer.daily.co";
 
   return (
     <>
@@ -189,7 +189,7 @@ export default function MeetingRoomPage() {
         .video-header .live-badge { display: flex; align-items: center; gap: .5rem; background: #e53e3e; padding: .35rem .8rem; border-radius: 20px; font-size: .82rem; font-weight: 700; }
         .video-header .live-dot { width: 8px; height: 8px; background: #fff; border-radius: 50%; animation: blink 1.5s ease-in-out infinite; }
         @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
-        .jitsi-frame { flex: 1; border: none; width: 100%; }
+        .daily-frame { flex: 1; border: none; width: 100%; }
       `}</style>
       <div className="video-room">
         <div className="video-header">
@@ -206,8 +206,8 @@ export default function MeetingRoomPage() {
           </div>
         </div>
         <iframe
-          className="jitsi-frame"
-          src={`https://${jitsiDomain}/${roomName}#config.prejoinPageEnabled=false&config.startWithVideoMuted=false&config.startWithAudioMuted=false&config.disableDeepLinking=true&interfaceConfig.SHOW_JITSI_WATERMARK=false&interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false`}
+          className="daily-frame"
+          src={`https://${dailyDomain}/${roomName}`}
           allow="camera; microphone; fullscreen; display-capture; autoplay"
           allowFullScreen
         />
