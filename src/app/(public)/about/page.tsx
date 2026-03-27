@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getSettings } from "@/lib/settings";
 
+export const revalidate = 0;
+
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getSettings();
   return {

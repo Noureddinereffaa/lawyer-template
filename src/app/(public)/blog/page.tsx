@@ -1,61 +1,75 @@
-import type { Metadata } from "next";
 import Link from "next/link";
-import { getSettings } from "@/lib/settings";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const config = await getSettings();
-  return {
-    title: "المدونة القانونية",
-    description: config.seo.description,
-  };
-}
+export const revalidate = 60; // Revalidate every minute
 
-const dummyArticles = [
-  { slug: "divorce-law-algeria", title: "حقوق المرأة في الطلاق وفق القانون الجزائري", date: "15 مارس 2026", category: "قانون الأسرة", excerpt: "استعراض شامل لحقوق المرأة في طلب الطلاق، الحضانة، والنفقة وفق أحكام قانون الأسرة الجزائري المعدّل." },
-  { slug: "company-registration", title: "كيف تؤسس شركتك في الجزائر؟ دليل خطوة بخطوة", date: "8 مارس 2026", category: "قانون تجاري", excerpt: "دليل قانوني عملي يشرح إجراءات تسجيل الشركات ذات المسؤولية المحدودة (SARL) من الفكرة حتى الرخصة." },
-  { slug: "real-estate-disputes", title: "النزاعات العقارية الأكثر شيوعاً وكيفية تجنبها", date: "1 مارس 2026", category: "قانون العقارات", excerpt: "تعرّف على أبرز مشكلات العقارات في الجزائر وكيف يحميك المحامي من الوقوع فيها مسبقاً." },
-  { slug: "labor-law-rights", title: "حقوق العامل عند الفصل التعسفي", date: "20 فيفري 2026", category: "قانون العمل", excerpt: "ماذا تفعل إذا تعرضت لتسريح تعسفي من عملك؟ الإجراءات القانونية لحماية حقوقك ومستحقاتك." },
-  { slug: "criminal-record-algeria", title: "كيفية استخراج صحيفة السوابق العدلية (رقم 3)", date: "10 فيفري 2026", category: "إجراءات قانونية", excerpt: "خطوات استخراج الكاسزي جوديسيار عن طريق الإنترنت أو عبر التقرب من المحكمة ومراكز البريد." },
-  { slug: "electronic-signature", title: "حجية التوقيع الإلكتروني في التشريع الجزائري", date: "2 جانفي 2026", category: "قانون تجاري", excerpt: "مدى الاعتراف القانوني بالتوقيع الإلكتروني في العقود والتعاملات التجارية الإلكترونية." }
-];
+export default async function BlogIndexPage() {
+  const supabase = await createServerSupabaseClient();
+  const { data: articles } = await supabase
+    .from("articles")
+    .select("title, slug, excerpt, category, cover_image, published_at, created_at")
+    .eq("published", true)
+    .order("created_at", { ascending: false });
 
-export default async function BlogPage() {
-  const config = await getSettings();
   return (
-    <>
-      <div style={{ paddingTop: "80px" }} />
-      <section className="page-hero">
-        <div className="container">
-          <div className="breadcrumb">
-            <Link href="/">الرئيسية</Link> / <span>المدونة</span>
-          </div>
-          <h1>المدونة القانونية</h1>
-          <p>أحدث المقالات، التحليلات، والإرشادات لفهم حقوقك وواجباتك القانونية</p>
-        </div>
-      </section>
+    <div className="container" style={{ paddingTop: "6rem", paddingBottom: "4rem" }}>
+      <div className="section-header" style={{ marginBottom: "3rem" }}>
+        <span className="badge">📰 مقالات قانونية</span>
+        <h1 style={{ fontSize: "2.5rem", color: "var(--primary)", marginTop: "1rem" }}>المدونة القانونية</h1>
+        <p style={{ color: "var(--text-secondary)", fontSize: "1.1rem" }}>
+          شروحات قانونية، نصائح، وأدلة مبسطة لمعرفة حقوقك وواجباتك.
+        </p>
+        <div className="divider" style={{ margin: "1.5rem auto 0" }} />
+      </div>
 
-      <section className="section" style={{ background: "var(--bg)" }}>
-        <div className="container">
-          <div className="grid-3">
-            {dummyArticles.map((a) => (
-              <div key={a.slug} className="card blog-card">
-                <div className="blog-card-image">
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "3rem" }}>📄</div>
-                </div>
-                <div className="blog-card-body">
-                  <div className="blog-card-meta">
-                    <span className="tag">{a.category}</span>
-                    <span>{a.date}</span>
-                  </div>
-                  <h3><Link href={`/blog/${a.slug}`}>{a.title}</Link></h3>
-                  <p className="blog-card-excerpt">{a.excerpt}</p>
-                  <Link href={`/blog/${a.slug}`} className="read-more">اقرأ المزيد →</Link>
-                </div>
-              </div>
-            ))}
-          </div>
+      {!articles || articles.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "4rem", background: "var(--surface)", borderRadius: 16 }}>
+          <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📭</div>
+          <h3 style={{ color: "var(--text)" }}>لا توجد مقالات حالياً</h3>
+          <p style={{ color: "var(--text-secondary)" }}>سنقوم بنشر مقالات مفيدة قريباً، يرجى العودة لاحقاً.</p>
         </div>
-      </section>
-    </>
+      ) : (
+        <div className="grid-3">
+          {articles.map((article) => {
+            const date = new Date(article.published_at || article.created_at).toLocaleDateString("ar-DZ", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            });
+
+            return (
+              <Link href={`/blog/${article.slug}`} key={article.slug} className="card" style={{ textDecoration: "none", display: "flex", flexDirection: "column", padding: 0, overflow: "hidden", transition: "all .3s" }}>
+                {article.cover_image ? (
+                  <div style={{ width: "100%", height: 200, backgroundImage: `url(${article.cover_image})`, backgroundSize: "cover", backgroundPosition: "center" }} />
+                ) : (
+                  <div style={{ width: "100%", height: 200, background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "4rem" }}>
+                    ⚖️
+                  </div>
+                )}
+                <div style={{ padding: "1.5rem", flex: 1, display: "flex", flexDirection: "column" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                    <span className="badge" style={{ margin: 0, fontSize: ".75rem", padding: ".25rem .75rem" }}>
+                      {article.category || "عام"}
+                    </span>
+                    <span style={{ fontSize: ".85rem", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: ".4rem" }}>
+                      📅 {date}
+                    </span>
+                  </div>
+                  <h3 style={{ fontSize: "1.25rem", color: "var(--primary)", marginBottom: ".75rem", lineHeight: 1.4 }}>
+                    {article.title}
+                  </h3>
+                  <p style={{ color: "var(--text-secondary)", fontSize: ".95rem", lineHeight: 1.6, marginBottom: "1.5rem", flex: 1 }}>
+                    {article.excerpt || "انقر لقراءة المزيد حول هذا الموضوع الأساسي والمهم في القانون الجزائري..."}
+                  </p>
+                  <div style={{ color: "var(--secondary)", fontWeight: 700, fontSize: ".95rem", display: "flex", alignItems: "center", gap: ".5rem", marginTop: "auto" }}>
+                    اقرأ المقال ←
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

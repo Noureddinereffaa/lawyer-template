@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getSettings } from "@/lib/settings";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+// Always fetch fresh — no static caching for CMS-driven content
+export const revalidate = 0;
 
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getSettings();
@@ -10,32 +14,25 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-// ── Static Testimonials ─────────────────────────────────────────
-const testimonials = [
-  { name: "أحمد بلقاسم", role: "عميل، قانون الأسرة", text: "خدمة احترافية جداً، المحامي شرح لي كل خطوة بوضوح وكسبنا القضية. أنصح به بكل ثقة.", stars: 5 },
-  { name: "فاطمة مهداوي", role: "عميلة، قانون العقارات", text: "تعاملت معه في قضية تسجيل عقار معقدة وحُلّت بسرعة مذهلة. شكراً جزيلاً.", stars: 5 },
-  { name: "كريم بوزيد", role: "صاحب شركة، قانون تجاري", text: "مكّنني من حل نزاع تجاري كان يهدد شركتي. اتفاق عادل وسرعة في الإنجاز.", stars: 5 },
-];
-
-const articles = [
-  { slug: "divorce-law-algeria", title: "حقوق المرأة في الطلاق وفق القانون الجزائري", date: "15 مارس 2026", category: "قانون الأسرة", excerpt: "استعراض شامل لحقوق المرأة في طلب الطلاق، الحضانة، والنفقة وفق أحكام قانون الأسرة الجزائري المعدّل." },
-  { slug: "company-registration", title: "كيف تؤسس شركتك في الجزائر؟ دليل خطوة بخطوة", date: "8 مارس 2026", category: "قانون تجاري", excerpt: "دليل قانوني عملي يشرح إجراءات تسجيل الشركات ذات المسؤولية المحدودة (SARL) من الفكرة حتى الرخصة." },
-  { slug: "real-estate-disputes", title: "النزاعات العقارية الأكثر شيوعاً وكيفية تجنبها", date: "1 مارس 2026", category: "قانون العقارات", excerpt: "تعرّف على أبرز مشكلات العقارات في الجزائر وكيف يحميك المحامي من الوقوع فيها مسبقاً." },
-];
-
 export default async function HomePage() {
   const config = await getSettings();
+  const supabase = await createServerSupabaseClient();
+  
+  // Fetch latest 3 published articles
+  const { data: latestArticles } = await supabase
+    .from("articles")
+    .select("title, slug, excerpt, category, cover_image, published_at, created_at")
+    .eq("published", true)
+    .order("created_at", { ascending: false })
+    .limit(3);
   return (
     <>
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="hero">
         <div className="container">
           <div className="hero-badge">⚖️ مكتب محاماة معتمد في الجزائر</div>
-          <h1>{config.tagline}</h1>
-          <p>
-            نقدم استشارات قانونية احترافية في مجالات الأسرة، التجارة، العقارات والقضايا الجنائية.
-            فريقنا يضمن لك الحماية القانونية الكاملة بخبرة تمتد لأكثر من 15 سنة.
-          </p>
+          <h1>{config.hero.title || config.tagline}</h1>
+          <p>{config.hero.description}</p>
           <div className="hero-actions">
             <Link href="/booking" className="btn btn-secondary btn-lg">📅 احجز استشارة الآن</Link>
             <Link href="/services" className="btn btn-outline btn-lg" style={{ color: "#fff", borderColor: "rgba(255,255,255,.5)" }}>
@@ -57,7 +54,7 @@ export default async function HomePage() {
       <div className="trust-bar">
         <div className="container">
           <div className="trust-bar-inner">
-            {["✅ محامٍ معتمد لدى المجلس الأعلى للقضاء", "🔒 سرية تامة", "⚡ رد خلال 24 ساعة", "📍 الجزائر العاصمة"].map((t, i) => (
+            {config.trustBar.map((t, i) => (
               <div key={i} className="trust-item">{t}</div>
             ))}
           </div>
@@ -97,11 +94,10 @@ export default async function HomePage() {
               <span className="badge">🎓 من نحن</span>
               <h2 style={{ marginTop: ".75rem" }}>{config.lawyerName}</h2>
               <p style={{ marginTop: "1rem", marginBottom: "1.5rem" }}>
-                محامٍ معتمد لدى المحاكم الجزائرية بخبرة تمتد لـ 15 عاماً في مجالات القانون التجاري،
-                الأسرة، والعقارات. نلتزم بالشفافية التامة والدفاع الكامل عن حقوق موكلينا.
+                {config.about.description}
               </p>
               <ul style={{ display: "flex", flexDirection: "column", gap: ".7rem", marginBottom: "2rem" }}>
-                {["عضو نقابة المحامين الجزائريين", "دكتوراه في القانون الخاص – جامعة الجزائر 1", "أكثر من 500 قضية مُنجزة بنجاح", "لغات العمل: العربية، الفرنسية"].map((f, i) => (
+                {config.about.features.map((f, i) => (
                   <li key={i} style={{ display: "flex", alignItems: "center", gap: ".6rem", color: "var(--text-secondary)" }}>
                     <span style={{ color: "var(--secondary)", fontWeight: 700 }}>✓</span> {f}
                   </li>
@@ -140,7 +136,7 @@ export default async function HomePage() {
             <div className="divider" />
           </div>
           <div className="grid-3">
-            {testimonials.map((t, i) => (
+            {config.testimonials.map((t, i) => (
               <div key={i} className="card testimonial-card">
                 <div className="quote-mark">"</div>
                 <div className="testimonial-stars">{"★".repeat(t.stars)}</div>
@@ -166,24 +162,39 @@ export default async function HomePage() {
             <h2>آخر المقالات القانونية</h2>
             <div className="divider" />
           </div>
-          <div className="grid-3">
-            {articles.map((a) => (
-              <div key={a.slug} className="card blog-card">
-                <div className="blog-card-image">
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "3rem" }}>📄</div>
-                </div>
-                <div className="blog-card-body">
-                  <div className="blog-card-meta">
-                    <span className="tag">{a.category}</span>
-                    <span>{a.date}</span>
+          
+          {!latestArticles || latestArticles.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-secondary)" }}>
+              لا توجد مقالات منشورة حالياً.
+            </div>
+          ) : (
+            <div className="grid-3">
+              {latestArticles.map((a) => {
+                const date = new Date(a.published_at || a.created_at).toLocaleDateString("ar-DZ");
+                return (
+                  <div key={a.slug} className="card blog-card">
+                    <div className="blog-card-image">
+                      {a.cover_image ? (
+                        <img src={a.cover_image} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "3rem" }}>📄</div>
+                      )}
+                    </div>
+                    <div className="blog-card-body">
+                      <div className="blog-card-meta">
+                        <span className="tag">{a.category || "عام"}</span>
+                        <span>{date}</span>
+                      </div>
+                      <h3><Link href={`/blog/${a.slug}`}>{a.title}</Link></h3>
+                      <p className="blog-card-excerpt">{a.excerpt}</p>
+                      <Link href={`/blog/${a.slug}`} className="read-more">اقرأ المزيد →</Link>
+                    </div>
                   </div>
-                  <h3><Link href={`/blog/${a.slug}`}>{a.title}</Link></h3>
-                  <p className="blog-card-excerpt">{a.excerpt}</p>
-                  <Link href={`/blog/${a.slug}`} className="read-more">اقرأ المزيد →</Link>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
+          
           <div style={{ textAlign: "center", marginTop: "2.5rem" }}>
             <Link href="/blog" className="btn btn-outline">عرض جميع المقالات</Link>
           </div>

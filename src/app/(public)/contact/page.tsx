@@ -3,6 +3,8 @@ import Link from "next/link";
 import { getSettings } from "@/lib/settings";
 import ContactForm from "@/components/forms/ContactForm";
 
+export const revalidate = 0;
+
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getSettings();
   return {
