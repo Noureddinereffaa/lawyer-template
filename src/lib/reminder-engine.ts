@@ -12,7 +12,7 @@
  * This works on Vercel Hobby plan with zero cron dependency.
  */
 
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { sendMeetingReminder } from "@/lib/notifications";
 import { clientConfig } from "../../config/client.config";
 
@@ -42,7 +42,7 @@ export function triggerReminderCheck(): void {
  * Core logic: check for appointments needing reminders and send them.
  */
 async function processReminders(): Promise<{ sent: number }> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = createAdminSupabaseClient();
   const now = new Date();
   let sentCount = 0;
 

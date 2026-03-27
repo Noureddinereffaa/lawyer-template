@@ -1,8 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://dummy.supabase.co";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "dummy";
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 // ── Server (Server Components / Route Handlers) ───────────────────────────────
 export async function createServerSupabaseClient() {
@@ -19,6 +21,21 @@ export async function createServerSupabaseClient() {
           });
         } catch {}
       },
+    },
+  });
+}
+
+// ── Admin Client (Server-side ONLY - bypasses RLS and Permissions) ────────────
+export function createAdminSupabaseClient() {
+  if (!supabaseServiceKey) {
+    console.warn("Missing SUPABASE_SERVICE_ROLE_KEY, falling back to anon key");
+    return createClient(supabaseUrl, supabaseAnonKey);
+  }
+  // Use service role key to completely bypass all DB permissions
+  return createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
     },
   });
 }

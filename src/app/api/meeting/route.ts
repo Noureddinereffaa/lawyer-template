@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/server";
 
 // GET: Check meeting status by code
 export async function GET(req: Request) {
@@ -10,7 +10,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "رمز غير صالح" }, { status: 400 });
   }
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = createAdminSupabaseClient();
   const { data, error } = await supabase
     .from("appointments")
     .select("id, client_name, type, date, time_slot, meeting_mode, meeting_status, status")
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
     }
 
-    const supabase = await createServerSupabaseClient();
+    const supabase = createAdminSupabaseClient();
 
     let newMeetingStatus: string;
     let newAppointmentStatus: string | undefined;

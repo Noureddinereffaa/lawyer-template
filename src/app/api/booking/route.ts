@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { clientConfig } from "../../../../config/client.config";
 import { sendBookingConfirmation, sendOnlineMeetingConfirmation, notifyLawyerNewBooking } from "@/lib/notifications";
 
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "البريد الإلكتروني مطلوب للمقابلة أونلاين" }, { status: 400 });
     }
 
-    const supabase = await createServerSupabaseClient();
+    const supabase = createAdminSupabaseClient();
 
     // 1. Check if the slot is blocked (optional table — skip if not present)
     try {
