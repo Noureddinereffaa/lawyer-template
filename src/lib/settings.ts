@@ -1,5 +1,5 @@
 import { unstable_noStore as noStore } from "next/cache";
-import { createServerSupabaseClient } from "./supabase/server";
+import { createAdminSupabaseClient } from "./supabase/server";
 import { clientConfig as defaultConfig, ClientConfig } from "../../config/client.config";
 
 /**
@@ -13,7 +13,7 @@ export async function getSettings(): Promise<ClientConfig> {
   noStore();
 
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = createAdminSupabaseClient();
     const { data, error } = await supabase
       .from("settings")
       .select("config_data")
