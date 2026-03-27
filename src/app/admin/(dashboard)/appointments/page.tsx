@@ -30,23 +30,28 @@ export default function AppointmentsPage() {
     else alert("حدث خطأ أثناء تحديث الحالة");
   };
 
-  const updateMeetingStatus = async (id: string, meetingStatus: string, appointmentStatus?: string) => {
-    const updateData: any = { meeting_status: meetingStatus };
-    if (appointmentStatus) updateData.status = appointmentStatus;
-    const { error } = await supabase.from("appointments").update(updateData).eq("id", id);
-    if (!error) fetchAppointments();
-    else alert("حدث خطأ");
+  const updateMeetingStatus = async (id: string, meetingStatus: string, appointmentStatus?: string, action?: string) => {
+    // Call the API so backend can handle Side Effects (like Daily.co room creation)
+    const res = await fetch("/api/meeting", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ appointmentId: id, action: action || "update", meetingStatus, appointmentStatus })
+    });
+    if (res.ok) fetchAppointments();
+    else alert("حدث خطأ أثناء إجراء التحديث");
   };
 
-  const startMeeting = (id: string, code: string) => {
-    updateMeetingStatus(id, "live", "confirmed");
-    // Open meeting in new tab
+  const startMeeting = async (id: string, code: string) => {
+    // 1. Tell API to create the room and update DB
+    await updateMeetingStatus(id, "live", "confirmed", "start");
+    
+    // 2. Open meeting in new tab
     const dailyDomain = process.env.NEXT_PUBLIC_DAILY_DOMAIN?.replace("https://", "") || "lawyer.daily.co";
     window.open(`https://${dailyDomain}/meet-${code}`, "_blank");
   };
 
-  const endMeeting = (id: string) => {
-    updateMeetingStatus(id, "ended", "completed");
+  const endMeeting = async (id: string) => {
+    await updateMeetingStatus(id, "ended", "completed", "end");
   };
 
   const filteredAppointments = appointments.filter(a => {
