@@ -233,3 +233,46 @@ export async function notifyLawyerContactForm(data: {
     `),
   });
 }
+
+// ── 6. Ticketing System Notifications ─────────────────────────────────────────
+export async function sendTicketCreatedEmail(data: {
+  clientName: string;
+  clientEmail: string;
+  ticketCode: string;
+  subject: string;
+}) {
+  if (!data.clientEmail) return;
+  await resend.emails.send({
+    from: fromEmail,
+    to: data.clientEmail,
+    subject: `📨 إشعار استلام رسالتك: ${data.subject}`,
+    html: emailTemplate(`
+      <p>السيد/ة <strong>${data.clientName}</strong>،</p>
+      <p>تم استلام رسالتك وفتح مذكرة تواصل خاصة بك لاستكمال المحادثة باحترافية.</p>
+      <div style="background:#f0f4f8;border-right:4px solid #3182ce;padding:12px;margin:16px 0;">
+        <span style="font-size:12px;color:#718096;display:block;margin-bottom:4px;">كود المتابعة السري:</span>
+        <strong style="font-size:18px;letter-spacing:2px;font-family:monospace;">${data.ticketCode}</strong>
+      </div>
+      <p>يُرجى الاحتفاظ بهذا الكود لاستخدامه في الرد والمتابعة عبر موقعنا المخصص.</p>
+    `),
+  });
+}
+
+export async function sendTicketReplyAlertEmail(data: {
+  clientName: string;
+  clientEmail: string;
+  ticketCode: string;
+}) {
+  if (!data.clientEmail) return;
+  await resend.emails.send({
+    from: fromEmail,
+    to: data.clientEmail,
+    subject: `🔔 تحديث على مذكرتك رقم ${data.ticketCode}`,
+    html: emailTemplate(`
+      <p>السيد/ة <strong>${data.clientName}</strong>،</p>
+      <p>قام مكتب المحاماة بإضافة رد جديد على مذكرتكم.</p>
+      <p>يرجى التفضل بزيارة موقعنا وإدخال إيميلك وكود المتابعة <strong>${data.ticketCode}</strong> لقراءة الرد التفصيلي.</p>
+    `),
+  });
+}
+

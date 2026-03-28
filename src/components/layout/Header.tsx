@@ -12,8 +12,9 @@ const navLinks = [
   { href: "/about",     label: "من نحن" },
   { href: "/services",  label: "الخدمات" },
   { href: "/blog",      label: "المدونة" },
-  { href: "/booking",   label: "احجز موعد" },
+  { href: "/meeting",   label: "قاعة الاجتماعات" },
   { href: "/contact",   label: "اتصل بنا" },
+  { href: "/booking",   label: "احجز موعد" },
 ];
 
 export default function Header({ config }: HeaderProps) {
