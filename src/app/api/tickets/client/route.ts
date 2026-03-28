@@ -20,7 +20,7 @@ export async function GET(request: Request) {
       .from("support_tickets")
       .select("*")
       .eq("ticket_code", code.toUpperCase())
-      .eq("client_email", email.toLowerCase())
+      .ilike("client_email", email)
       .single();
 
     if (ticketError || !ticket) {
