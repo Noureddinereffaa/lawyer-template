@@ -53,7 +53,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <nav className="admin-nav">
           <Link href="/admin" onClick={closeSidebar} className={`admin-nav-item ${pathname === '/admin' ? 'active' : ''}`}>🏠 نظرة عامة</Link>
           <Link href="/admin/appointments" onClick={closeSidebar} className={`admin-nav-item ${pathname?.includes('/appointments') ? 'active' : ''}`}>📅 المواعيد والحجوزات</Link>
-          <Link href="/admin/services" onClick={closeSidebar} className={`admin-nav-item ${pathname?.includes('/services') ? 'active' : ''}`}>⚖️ الخدمات</Link>
           <Link href="/admin/articles" onClick={closeSidebar} className={`admin-nav-item ${pathname?.includes('/articles') ? 'active' : ''}`}>📰 المقالات</Link>
           <Link href="/admin/settings" onClick={closeSidebar} className={`admin-nav-item ${pathname?.includes('/settings') ? 'active' : ''}`}>⚙️ الإعدادات</Link>
         </nav>

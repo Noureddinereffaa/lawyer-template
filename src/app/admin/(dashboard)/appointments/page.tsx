@@ -14,6 +14,9 @@ export default function AppointmentsPage() {
   const [filterMode, setFilterMode] = useState("");
   const [search, setSearch] = useState("");
 
+  // Bulk Selection State
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
   // Modal State
   const [selectedAppointment, setSelectedAppointment] = useState<any | null>(null);
   const [savingNotes, setSavingNotes] = useState(false);
@@ -66,6 +69,33 @@ export default function AppointmentsPage() {
     else alert("حدث خطأ أثناء إجراء التحديث");
   };
 
+  const bulkUpdateEntity = async (updates: any) => {
+    if (selectedIds.length === 0) return;
+    const { error } = await supabase.from("appointments").update(updates).in("id", selectedIds);
+    if (!error) {
+      setAppointments(prev => prev.map(a => selectedIds.includes(a.id) ? { ...a, ...updates } : a));
+      setSelectedIds([]);
+    } else {
+      alert("حدث خطأ أثناء التحديث السريع المتعدد");
+    }
+  };
+
+  const bulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!confirm(`هل أنت متأكد من حذف ${selectedIds.length} موعد(ين) نهائياً؟ هذا الإجراء لا يمكن التراجع عنه.`)) return;
+    const { error } = await supabase.from("appointments").delete().in("id", selectedIds);
+    if (!error) {
+      setAppointments(prev => prev.filter(a => !selectedIds.includes(a.id)));
+      setSelectedIds([]);
+    } else {
+      alert("حدث خطأ أثناء الحذف المتعدد");
+    }
+  };
+
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [filterArchive, filterStatus, filterMode, search]);
+
   const startMeeting = async (id: string, code: string) => {
     await updateMeetingStatus(id, "live", "confirmed", "start");
     window.open(`https://meet.jit.si/lawyer-meet-${code}`, "_blank");
@@ -90,6 +120,18 @@ export default function AppointmentsPage() {
     if (search && !a.client_name?.includes(search) && !a.client_phone?.includes(search)) return false;
     return true;
   });
+
+  const toggleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedIds(filteredAppointments.map(a => a.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const toggleSelectRow = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
 
   return (
     <>
@@ -134,22 +176,32 @@ export default function AppointmentsPage() {
         .modal-content {
           background: var(--surface); width: 100%; max-width: 600px;
           border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
-          overflow: hidden; display: flex; flexDirection: column;
+          overflow: hidden; display: flex; flex-direction: column;
+          max-height: 90vh;
         }
         .modal-header {
-          padding: 1.5rem; border-bottom: 1px solid var(--border);
+          padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
           display: flex; justify-content: space-between; align-items: center;
+          flex-shrink: 0;
         }
-        .modal-body { padding: 1.5rem; max-height: 70vh; overflow-y: auto; }
+        .modal-body { padding: 1.5rem; overflow-y: auto; flex: 1; }
         .modal-footer {
           padding: 1rem 1.5rem; border-top: 1px solid var(--border);
           display: flex; justify-content: space-between; align-items: center;
-          background: rgba(0,0,0,0.02);
+          background: rgba(0,0,0,0.02); flex-wrap: wrap; gap: 0.75rem; flex-shrink: 0;
         }
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
         .info-box { background: rgba(0,0,0,0.02); padding: 1rem; border-radius: 8px; border: 1px solid var(--border); }
         .info-label { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.3rem; }
         .info-val { font-weight: 700; font-size: 0.95rem; }
+        
+        .bulk-actions-bar {
+          display: flex; gap: 0.5rem; padding: 0.75rem 1rem; background: rgba(49, 130, 206, 0.05); 
+          border: 1px solid rgba(49, 130, 206, 0.2); border-radius: 8px; align-items: center; 
+          margin-bottom: 1rem; flex-wrap: wrap; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+          animation: slide-down 0.25s ease-out;
+        }
+        @keyframes slide-down { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
 
       {/* ─── MODAL ───────────────────────────────────────────────────────── */}
@@ -246,6 +298,27 @@ export default function AppointmentsPage() {
         </button>
       </div>
 
+      {selectedIds.length > 0 && (
+        <div className="bulk-actions-bar">
+          <span style={{ fontWeight: 700, color: "var(--primary)", marginLeft: "1rem" }}>
+            تم تحديد ({selectedIds.length}):
+          </span>
+          <button className="btn btn-outline btn-sm" onClick={() => bulkUpdateEntity({ is_archived: true })}>
+            📦 تحويل للأرشيف
+          </button>
+          <button className="btn btn-outline btn-sm" onClick={() => bulkUpdateEntity({ is_archived: false })}>
+            📂 استعادة من الأرشيف
+          </button>
+          <button className="btn btn-outline btn-sm" onClick={() => bulkUpdateEntity({ status: 'completed' })}>
+            ✅ تعيين كمكتمل
+          </button>
+          <div style={{ flex: 1 }}></div>
+          <button className="btn btn-primary btn-sm" style={{ background: "#e53e3e", borderColor: "#e53e3e" }} onClick={bulkDelete}>
+            🗑️ حذف نهائي
+          </button>
+        </div>
+      )}
+
       <div className="data-table-wrap">
         <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid var(--border)", display: "flex", gap: ".75rem", background: "var(--surface)", flexWrap: "wrap", alignItems: "center" }}>
           
@@ -286,6 +359,12 @@ export default function AppointmentsPage() {
           <table className="data-table">
             <thead>
               <tr>
+                <th style={{ width: "40px", textAlign: "center" }}>
+                  <input type="checkbox" 
+                    checked={filteredAppointments.length > 0 && selectedIds.length === filteredAppointments.length} 
+                    onChange={toggleSelectAll} 
+                  />
+                </th>
                 <th>العميل</th>
                 <th>التاريخ والوقت</th>
                 <th>المقابلة</th>
@@ -295,18 +374,21 @@ export default function AppointmentsPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={5} style={{ textAlign: "center", padding: "4rem" }}>
+                <tr><td colSpan={6} style={{ textAlign: "center", padding: "4rem" }}>
                   <div style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>⏳</div>
                   <div style={{ color: "var(--text-secondary)" }}>جاري مزامنة المواعيد...</div>
                 </td></tr>
               ) : filteredAppointments.length === 0 ? (
-                <tr><td colSpan={5} style={{ textAlign: "center", padding: "4rem", color: "var(--text-secondary)" }}>
+                <tr><td colSpan={6} style={{ textAlign: "center", padding: "4rem", color: "var(--text-secondary)" }}>
                   <div style={{ fontSize: "2rem", marginBottom: "1rem", opacity: 0.5 }}>📅</div>
                   <div>لا توجد مواعيد مطابقة لخيارات الفلترة الحالية</div>
                 </td></tr>
               ) : (
                 filteredAppointments.map(a => (
-                  <tr key={a.id} style={{ opacity: a.is_archived ? 0.6 : 1 }}>
+                  <tr key={a.id} style={{ opacity: a.is_archived ? 0.6 : 1, background: selectedIds.includes(a.id) ? "rgba(49,130,206,0.03)" : undefined }}>
+                    <td style={{ textAlign: "center", verticalAlign: "middle" }}>
+                      <input type="checkbox" checked={selectedIds.includes(a.id)} onChange={() => toggleSelectRow(a.id)} />
+                    </td>
                     {/* Client */}
                     <td>
                       <div style={{ fontWeight: 700, color: "var(--primary)" }}>{a.client_name}</div>

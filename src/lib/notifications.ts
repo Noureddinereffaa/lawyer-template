@@ -87,7 +87,7 @@ export async function sendOnlineMeetingConfirmation(data: {
 
       <div style="background:linear-gradient(135deg,#1a3c5e,#2a5c8e);border-radius:12px;padding:24px;text-align:center;margin:20px 0;">
         <p style="color:rgba(255,255,255,.8);margin:0 0 8px;font-size:14px;">🔐 رمز الاجتماع الخاص بك</p>
-        <div style="display:inline-block;">
+        <div style="display:inline-block;" dir="ltr">
           ${data.meetingCode.split("").map(d => `<span style="display:inline-block;width:40px;height:48px;line-height:48px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:8px;margin:0 3px;font-size:22px;font-weight:800;color:#fff;text-align:center;">${d}</span>`).join("")}
         </div>
         <p style="color:rgba(255,255,255,.7);margin:12px 0 0;font-size:12px;">احفظ هذا الرمز — ستحتاجه للدخول لغرفة الاجتماع</p>

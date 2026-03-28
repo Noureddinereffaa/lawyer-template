@@ -288,11 +288,11 @@ export default function BookingWizard() {
             <div className="grid-2" style={{ gap: "1.25rem", marginBottom: "1.25rem" }}>
               <div className="form-group">
                 <label className="form-label">
-                  البريد الإلكتروني {meetingMode === "online" ? <span>*</span> : "(اختياري)"}
+                  البريد الإلكتروني <span>*</span>
                 </label>
                 <input type="email" className="form-control" dir="ltr"
-                  required={meetingMode === "online"}
-                  placeholder={meetingMode === "online" ? "مطلوب لإرسال رمز الاجتماع" : ""}
+                  required
+                  placeholder="مطلوب لإرسال تفاصيل الموعد وتأكيده"
                   value={clientEmail} onChange={e => setClientEmail(e.target.value)} />
               </div>
               {meetingMode === "in_person" ? (
@@ -352,7 +352,7 @@ export default function BookingWizard() {
             {meetingMode === "online" && meetingCode && (
               <div className="meeting-code-box">
                 <div style={{ fontSize: ".9rem", opacity: .8, marginBottom: ".5rem" }}>🔐 رمز الاجتماع الخاص بك</div>
-                <div className="meeting-code-digits">
+                <div className="meeting-code-digits" dir="ltr">
                   {meetingCode.split("").map((d, i) => (
                     <div key={i} className="meeting-code-digit">{d}</div>
                   ))}
