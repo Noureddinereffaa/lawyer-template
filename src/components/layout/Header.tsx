@@ -7,14 +7,24 @@ interface HeaderProps {
   config: ClientConfig;
 }
 
-const navLinks = [
+type NavItem = {
+  label: string;
+  href?: string;
+  subLinks?: { label: string; href: string }[];
+};
+
+const navLinks: NavItem[] = [
   { href: "/",          label: "الرئيسية" },
   { href: "/about",     label: "من نحن" },
   { href: "/services",  label: "الخدمات" },
   { href: "/blog",      label: "المدونة" },
-  { href: "/track",     label: "متابعة تذكرة" },
-  { href: "/showcase",  label: "عرض المشروع" },
-  { href: "/meeting",   label: "قاعة الاجتماعات" },
+  { 
+    label: "منطقة العملاء", 
+    subLinks: [
+      { href: "/track",   label: "متابعة التذكرة" },
+      { href: "/meeting", label: "قاعة الاجتماعات" },
+    ] 
+  },
   { href: "/contact",   label: "اتصل بنا" },
   { href: "/booking",   label: "احجز موعد" },
 ];
@@ -72,9 +82,28 @@ export default function Header({ config }: HeaderProps) {
           padding: 0.6rem 1rem; border-radius: 8px;
           color: rgba(255,255,255, 0.8); font-size: 0.95rem; font-weight: 600;
           transition: var(--transition);
+          display: inline-flex; align-items: center; gap: 0.2rem;
         }
         .nav-link:hover { color: #fff; background: rgba(255,255,255, 0.1); }
         .nav-link.active { color: var(--secondary-light); }
+        
+        .nav-dropdown { position: relative; display: inline-block; cursor: pointer; }
+        .dropdown-menu {
+          position: absolute; top: 100%; right: 0; 
+          background: rgba(13, 35, 64, 0.95);
+          backdrop-filter: blur(12px);
+          min-width: 180px;
+          border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+          padding: 0.5rem 0;
+          opacity: 0; visibility: hidden; transform: translateY(10px);
+          transition: all 0.3s ease;
+        }
+        .nav-dropdown:hover .dropdown-menu { opacity: 1; visibility: visible; transform: translateY(0); }
+        .dropdown-item {
+          display: block; padding: 0.6rem 1.25rem; color: rgba(255,255,255,0.8);
+          font-size: 0.9rem; font-weight: 600; transition: var(--transition);
+        }
+        .dropdown-item:hover { color: #fff; background: rgba(255,255,255,0.1); }
         
         .nav-link.booking {
           background: var(--secondary); color: #fff; 
@@ -145,15 +174,33 @@ export default function Header({ config }: HeaderProps) {
             </Link>
 
             <nav className="header-nav">
-              {navLinks.map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  className={`nav-link${l.label === "احجز موعد" ? " booking" : ""}`}
-                >
-                  {l.label}
-                </Link>
-              ))}
+              {navLinks.map((l, idx) => {
+                if (l.subLinks) {
+                  return (
+                    <div key={idx} className="nav-dropdown">
+                      <span className="nav-link">
+                        {l.label} <span style={{ fontSize: "0.7rem", opacity: 0.6 }}>▼</span>
+                      </span>
+                      <div className="dropdown-menu">
+                        {l.subLinks.map((sub) => (
+                          <Link key={sub.href} href={sub.href} className="dropdown-item">
+                            {sub.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <Link
+                    key={l.href}
+                    href={l.href as string}
+                    className={`nav-link${l.label === "احجز موعد" ? " booking" : ""}`}
+                  >
+                    {l.label}
+                  </Link>
+                );
+              })}
             </nav>
 
             <button
@@ -167,17 +214,37 @@ export default function Header({ config }: HeaderProps) {
         </div>
 
         <div className={`mobile-overlay${isMenuOpen ? " open" : ""}`}>
-          {navLinks.map((l, i) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="mobile-nav-link"
-              onClick={() => setIsMenuOpen(false)}
-              style={{ transitionDelay: `${i * 0.05}s` }}
-            >
-              {l.label}
-            </Link>
-          ))}
+          {navLinks.map((l, i) => {
+            if (l.subLinks) {
+              return (
+                <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
+                  <div className="mobile-nav-link" style={{ transitionDelay: `${i * 0.05}s`, opacity: 0.5 }}>{l.label}</div>
+                  {l.subLinks.map((sub, subIdx) => (
+                    <Link
+                      key={sub.href}
+                      href={sub.href}
+                      className="mobile-nav-link"
+                      onClick={() => setIsMenuOpen(false)}
+                      style={{ transitionDelay: `${(i + subIdx + 1) * 0.05}s`, fontSize: "1.2rem", fontWeight: 500 }}
+                    >
+                      {sub.label}
+                    </Link>
+                  ))}
+                </div>
+              );
+            }
+            return (
+              <Link
+                key={l.href}
+                href={l.href as string}
+                className="mobile-nav-link"
+                onClick={() => setIsMenuOpen(false)}
+                style={{ transitionDelay: `${i * 0.05}s` }}
+              >
+                {l.label}
+              </Link>
+            );
+          })}
           <div style={{ marginTop: "2rem", color: "rgba(255,255,255,0.4)", fontSize: "0.9rem" }}>
             ⚖️ حقوق الطبع محفوظة {new Date().getFullYear()}
           </div>
