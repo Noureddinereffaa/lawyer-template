@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 /**
@@ -22,8 +22,9 @@ export async function requireAuth(): Promise<NextResponse | null> {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      // Check if global Demo Mode is enabled
-      const { data: settingsData } = await supabase.from('settings').select('config_data').single();
+      // Check if global Demo Mode is enabled (using Admin client to bypass RLS)
+      const adminClient = createAdminSupabaseClient();
+      const { data: settingsData } = await adminClient.from('settings').select('config_data').single();
       const isDemoMode = settingsData?.config_data?.isDemoMode === true;
       
       if (!isDemoMode) {

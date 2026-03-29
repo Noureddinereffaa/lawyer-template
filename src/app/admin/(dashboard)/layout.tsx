@@ -28,6 +28,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const closeSidebar = () => setSidebarOpen(false);
 
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    // Clear admin bypass cookie if it exists
+    document.cookie = "admin_bypass=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    window.location.href = "/admin/login";
+  };
+
   return (
     <div className="admin-layout">
       {/* Mobile Top Header */}
@@ -89,7 +97,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
         <div style={{ marginTop: "auto", padding: "1.5rem", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-          <button className="btn btn-outline btn-full hover-lift" style={{ 
+          <button onClick={handleLogout} className="btn btn-outline btn-full hover-lift" style={{ 
             borderColor: "rgba(255,255,255,.15)", color: "#fff",
             background: "rgba(255,255,255,0.05)", borderRadius: "10px"
           }}>

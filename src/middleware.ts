@@ -1,4 +1,5 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest, type NextFetchEvent } from 'next/server'
 import { triggerReminderCheck } from '@/lib/reminder-engine'
 
@@ -36,13 +37,19 @@ export default async function middleware(request: NextRequest, event: NextFetchE
     }
   )
 
+  // Use a service role client to check isDemoMode (bypassing RLS)
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  const adminClient = serviceRoleKey 
+    ? createClient(supabaseUrl, serviceRoleKey) 
+    : supabase;
+
   const { data: { user } } = await supabase.auth.getUser()
 
   // ── Protected Routes ──
   if (request.nextUrl.pathname.startsWith('/admin') && !request.nextUrl.pathname.startsWith('/admin/login')) {
     if (!user) {
-      // Check if global Demo Mode is enabled
-      const { data: settingsData } = await supabase.from('settings').select('config_data').single();
+      // Check if global Demo Mode is enabled (using adminClient to bypass RLS)
+      const { data: settingsData } = await adminClient.from('settings').select('config_data').single();
       const isDemoMode = settingsData?.config_data?.isDemoMode === true;
       
       if (!isDemoMode) {
