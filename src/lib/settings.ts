@@ -47,10 +47,8 @@ export async function getSettings(): Promise<ClientConfig> {
       booking: {
         ...defaultConfig.booking,
         ...(db.booking || {}),
-        workHours: {
-          ...defaultConfig.booking.workHours,
-          ...(db.booking?.workHours || {}),
-        },
+        inPerson: { ...defaultConfig.booking.inPerson, ...(db.booking?.inPerson || {}) },
+        online: { ...defaultConfig.booking.online, ...(db.booking?.online || {}) },
       },
 
       // ── Arrays ────────────────────────────────────────────────────

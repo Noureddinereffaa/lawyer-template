@@ -40,27 +40,34 @@ export default function BookingWizard() {
     const dates: Date[] = [];
     let d = new Date();
     d.setDate(d.getDate() + 1);
+    
+    // Choose schedule based on meeting mode
+    const schedule = meetingMode === "in_person" ? clientConfig.booking.inPerson : clientConfig.booking.online;
+    
     while (dates.length < 7 && dates.length < clientConfig.booking.maxAdvanceDays) {
-      if (clientConfig.booking.workDays.includes(d.getDay())) {
+      if (schedule.workDays.includes(d.getDay())) {
         dates.push(new Date(d));
       }
       d.setDate(d.getDate() + 1);
     }
     setAvailableDates(dates);
-  }, []);
+    setSelectedDate(null); // Reset date when mode changes
+    setSelectedTime(null);
+  }, [meetingMode]); // Re-calculate dates when meeting mode changes
 
   useEffect(() => {
     if (selectedDate) {
+      const schedule = meetingMode === "in_person" ? clientConfig.booking.inPerson : clientConfig.booking.online;
       const slots = [];
-      const start = parseInt(clientConfig.booking.workHours.start.split(":")[0]);
-      const end = parseInt(clientConfig.booking.workHours.end.split(":")[0]);
+      const start = parseInt(schedule.workHours.start.split(":")[0]);
+      const end = parseInt(schedule.workHours.end.split(":")[0]);
       for (let i = start; i < end; i++) {
         slots.push(`${i}:00`);
       }
       setAvailableTimes(slots);
       setSelectedTime(null);
     }
-  }, [selectedDate]);
+  }, [selectedDate, meetingMode]); // Re-calculate times when date or mode changes
 
   const handleNext = () => {
     if (step === 1) {

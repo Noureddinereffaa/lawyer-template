@@ -59,42 +59,94 @@ export function ServicesTab({ config, updateConfig }: { config: ClientConfig, up
 }
 
 export function BookingTab({ config, updateConfig }: { config: ClientConfig, updateConfig: (path: string, val: any) => void }) {
+  const DAYS = [{ num: 0, name: "الأحد" }, { num: 1, name: "الاثنين" }, { num: 2, name: "الثلاثاء" }, { num: 3, name: "الأربعاء" }, { num: 4, name: "الخميس" }, { num: 5, name: "الجمعة" }, { num: 6, name: "السبت" }];
+
   return (
     <>
       <div className="card" style={{ marginBottom: "1.5rem" }}>
-        <div className="section-title">📅 إعدادات الحجز</div>
-        <div className="field-row">
-          <div className="form-group">
-            <label className="form-label">بداية الدوام</label>
-            <input className="form-control" dir="ltr" type="time" value={config.booking.workHours.start} onChange={e => updateConfig("booking.workHours", { ...config.booking.workHours, start: e.target.value })} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">نهاية الدوام</label>
-            <input className="form-control" dir="ltr" type="time" value={config.booking.workHours.end} onChange={e => updateConfig("booking.workHours", { ...config.booking.workHours, end: e.target.value })} />
+        <div className="section-title">👨‍⚖️ المواعيد وأوقات العمل</div>
+        
+        <div className="dynamic-list">
+          <div className="dynamic-item" style={{ border: "2px solid var(--border)", background: "#fafafa" }}>
+            
+            {/* In-Person Schedule */}
+            <div style={{ background: "rgba(26,60,94,.05)", padding: "1rem", borderRadius: "8px", marginBottom: "1rem" }}>
+              <h4 style={{ color: "var(--primary)", marginBottom: "1rem", fontSize: "0.95rem" }}>🏛️ المواعيد الحضورية (في المكتب)</h4>
+              <div className="field-row">
+                <div className="form-group">
+                  <label className="form-label">من الساعة</label>
+                  <input className="form-control" dir="ltr" type="time" value={config.booking.inPerson.workHours.start} onChange={e => {
+                    updateConfig("booking.inPerson.workHours", { ...config.booking.inPerson.workHours, start: e.target.value });
+                  }} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">إلى الساعة</label>
+                  <input className="form-control" dir="ltr" type="time" value={config.booking.inPerson.workHours.end} onChange={e => {
+                    updateConfig("booking.inPerson.workHours", { ...config.booking.inPerson.workHours, end: e.target.value });
+                  }} />
+                </div>
+              </div>
+              <div>
+                <label className="form-label">أيام العمل الحضورية</label>
+                <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap", marginTop: ".5rem" }}>
+                  {DAYS.map(d => (
+                    <label key={d.num} style={{ display: "flex", alignItems: "center", gap: ".4rem", padding: ".3rem .6rem", borderRadius: 6, border: `2px solid ${config.booking.inPerson.workDays.includes(d.num) ? "var(--primary)" : "var(--border)"}`, background: config.booking.inPerson.workDays.includes(d.num) ? "rgba(26,60,94,.08)" : "transparent", cursor: "pointer", fontSize: ".8rem", fontWeight: 600 }}>
+                      <input type="checkbox" checked={config.booking.inPerson.workDays.includes(d.num)} onChange={e => {
+                        let days = e.target.checked ? [...config.booking.inPerson.workDays, d.num].sort() : config.booking.inPerson.workDays.filter(x => x !== d.num);
+                        updateConfig("booking.inPerson.workDays", days);
+                      }} style={{ display: "none" }} />
+                      {config.booking.inPerson.workDays.includes(d.num) ? "✅" : "⬜"} {d.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Online Schedule */}
+            <div style={{ background: "rgba(72,187,120,.05)", padding: "1rem", borderRadius: "8px" }}>
+              <h4 style={{ color: "#2f855a", marginBottom: "1rem", fontSize: "0.95rem" }}>💻 المواعيد أونلاين (عن بعد)</h4>
+              <div className="field-row">
+                <div className="form-group">
+                  <label className="form-label">من الساعة</label>
+                  <input className="form-control" dir="ltr" type="time" value={config.booking.online.workHours.start} onChange={e => {
+                    updateConfig("booking.online.workHours", { ...config.booking.online.workHours, start: e.target.value });
+                  }} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">إلى الساعة</label>
+                  <input className="form-control" dir="ltr" type="time" value={config.booking.online.workHours.end} onChange={e => {
+                    updateConfig("booking.online.workHours", { ...config.booking.online.workHours, end: e.target.value });
+                  }} />
+                </div>
+              </div>
+              <div>
+                <label className="form-label">أيام العمل للعملاء أونلاين</label>
+                <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap", marginTop: ".5rem" }}>
+                  {DAYS.map(d => (
+                    <label key={d.num} style={{ display: "flex", alignItems: "center", gap: ".4rem", padding: ".3rem .6rem", borderRadius: 6, border: `2px solid ${config.booking.online.workDays.includes(d.num) ? "#48bb78" : "var(--border)"}`, background: config.booking.online.workDays.includes(d.num) ? "rgba(72,187,120,.1)" : "transparent", cursor: "pointer", fontSize: ".8rem", fontWeight: 600 }}>
+                      <input type="checkbox" checked={config.booking.online.workDays.includes(d.num)} onChange={e => {
+                        let days = e.target.checked ? [...config.booking.online.workDays, d.num].sort() : config.booking.online.workDays.filter(x => x !== d.num);
+                        updateConfig("booking.online.workDays", days);
+                      }} style={{ display: "none" }} />
+                      {config.booking.online.workDays.includes(d.num) ? "✅" : "⬜"} {d.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
+        
+        <div className="section-title" style={{ marginTop: "2rem" }}>⚙️ إعدادات الحجز العامة</div>
         <div className="field-row">
           <div className="form-group">
             <label className="form-label">مدة الموعد (دقيقة)</label>
             <input className="form-control" dir="ltr" type="number" value={config.booking.slotDurationMin} onChange={e => updateConfig("booking.slotDurationMin", parseInt(e.target.value) || 60)} />
           </div>
           <div className="form-group">
-            <label className="form-label">أقصى مدة حجز مسبق (يوم)</label>
+            <label className="form-label">أقصى مدة للتدوين في المستقبل (يوم)</label>
             <input className="form-control" dir="ltr" type="number" value={config.booking.maxAdvanceDays} onChange={e => updateConfig("booking.maxAdvanceDays", parseInt(e.target.value) || 30)} />
-          </div>
-        </div>
-        <div className="field-full" style={{ marginTop: ".5rem" }}>
-          <label className="form-label">أيام العمل</label>
-          <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap", marginTop: ".5rem" }}>
-            {[{ num: 0, name: "الأحد" }, { num: 1, name: "الاثنين" }, { num: 2, name: "الثلاثاء" }, { num: 3, name: "الأربعاء" }, { num: 4, name: "الخميس" }, { num: 5, name: "الجمعة" }, { num: 6, name: "السبت" }].map(d => (
-              <label key={d.num} style={{ display: "flex", alignItems: "center", gap: ".4rem", padding: ".4rem .8rem", borderRadius: 8, border: `2px solid ${config.booking.workDays.includes(d.num) ? "var(--primary)" : "var(--border)"}`, background: config.booking.workDays.includes(d.num) ? "rgba(26,60,94,.08)" : "transparent", cursor: "pointer", fontSize: ".88rem", fontWeight: 600 }}>
-                <input type="checkbox" checked={config.booking.workDays.includes(d.num)} onChange={e => {
-                  const days = e.target.checked ? [...config.booking.workDays, d.num].sort() : config.booking.workDays.filter(x => x !== d.num);
-                  updateConfig("booking.workDays", days);
-                }} style={{ display: "none" }} />
-                {config.booking.workDays.includes(d.num) ? "✅" : "⬜"} {d.name}
-              </label>
-            ))}
           </div>
         </div>
       </div>

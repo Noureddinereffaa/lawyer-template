@@ -132,11 +132,17 @@ export const clientConfig = {
 
   // ─── نظام الحجز ───────────────────────────────────────────
   booking: {
-    // 0=أحد، 1=اثنين ... 6=سبت
-    workDays: [0, 1, 2, 3, 4, 6],
-    workHours: { start: "09:00", end: "17:00" },
     slotDurationMin: 60,
     maxAdvanceDays: 30,
+    inPerson: {
+      workDays: [0, 1, 2, 3, 4], // الأحد إلى الخميس
+      workHours: { start: "09:00", end: "16:00" },
+    },
+    online: {
+      workDays: [4, 6], // الخميس والسبت
+      workHours: { start: "18:00", end: "21:00" },
+    },
+
     consultationTypes: [
       { id: "family",     label: "قانون الأسرة",    price: 3000 },
       { id: "commercial", label: "قانون تجاري",     price: 5000 },

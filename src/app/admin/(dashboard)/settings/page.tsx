@@ -39,7 +39,8 @@ function deepMergeConfig(db: any): ClientConfig {
     booking: {
       ...defaultConfig.booking,
       ...(db.booking || {}),
-      workHours: { ...defaultConfig.booking.workHours, ...(db.booking?.workHours || {}) },
+      inPerson: { ...defaultConfig.booking.inPerson, ...(db.booking?.inPerson || {}) },
+      online: { ...defaultConfig.booking.online, ...(db.booking?.online || {}) },
     },
     trustBar:     (db.trustBar     && db.trustBar.length     > 0) ? db.trustBar     : defaultConfig.trustBar,
     testimonials: (db.testimonials && db.testimonials.length > 0) ? db.testimonials : defaultConfig.testimonials,
