@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/auth-guard";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -11,6 +12,9 @@ const SETTINGS_ID = "00000000-0000-0000-0000-000000000001";
 const PUBLIC_PAGES = ["/", "/services", "/about", "/blog", "/booking", "/contact"];
 
 export async function POST(req: NextRequest) {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
     const config = await req.json();
 

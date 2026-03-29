@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/auth-guard";
 
 /**
  * POST /api/admin/tickets/from-appointment
@@ -7,6 +8,9 @@ import { createAdminSupabaseClient } from "@/lib/supabase/server";
  * Returns the ticket ID so the admin can navigate to the messages page.
  */
 export async function POST(req: Request) {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
     const body = await req.json();
     const { appointmentId, clientName, clientPhone, clientEmail, appointmentType, appointmentDate } = body;

@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/auth-guard";
 import { format } from "date-fns";
 
 export async function GET() {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
     const supabase = createAdminSupabaseClient();
     const today = format(new Date(), "yyyy-MM-dd");
@@ -27,7 +31,14 @@ export async function GET() {
       open: tickets?.filter(t => t.status === "open" && !t.is_archived).length || 0,
       replied: tickets?.filter(t => t.status === "replied" && !t.is_archived).length || 0,
       totalActive: tickets?.filter(t => !t.is_archived).length || 0,
+      responseRate: 0,
     };
+    
+    if (ticketStats.totalActive > 0) {
+      ticketStats.responseRate = Math.round((ticketStats.replied / ticketStats.totalActive) * 100);
+    } else {
+      ticketStats.responseRate = 100; // Default to 100% if no tickets exist yet
+    }
 
     // 3. Fetch Content Stats
     const { count: articlesTotal } = await supabase

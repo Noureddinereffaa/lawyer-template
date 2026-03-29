@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { clientConfig } from "../../../../config/client.config";
 import { sendBookingConfirmation, sendOnlineMeetingConfirmation, notifyLawyerNewBooking } from "@/lib/notifications";
+import { rateLimit } from "@/lib/rate-limit";
 
 function generateMeetingCode(): string {
   // Generate a 6-digit numeric code
@@ -11,6 +12,16 @@ function generateMeetingCode(): string {
 
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get("x-forwarded-for") || "unknown";
+    const { success } = rateLimit(ip, 3, 60000); // 3 requests per minute
+
+    if (!success) {
+      return NextResponse.json(
+        { error: "لقد تجاوزت الحد المسموح. يرجى الانتظار دقيقة والمحاولة مجدداً." },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const { type, date, timeSlot, clientName, clientPhone, clientEmail, wilaya, notes, meetingMode } = body;
 

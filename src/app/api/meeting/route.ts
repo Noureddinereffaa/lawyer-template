@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/auth-guard";
 
 // GET: Check meeting status by code
 export async function GET(req: Request) {
@@ -37,8 +38,11 @@ export async function GET(req: Request) {
   });
 }
 
-// POST: Update meeting status (lawyer starts/ends session)
+// POST: Update meeting status (lawyer starts/ends session — requires auth)
 export async function POST(req: Request) {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
     const body = await req.json();
     const { appointmentId, action } = body; // action: 'start' | 'end' | 'client_waiting'

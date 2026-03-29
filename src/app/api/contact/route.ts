@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { sendTicketCreatedEmail } from "@/lib/notifications";
+import { rateLimit } from "@/lib/rate-limit";
 
 function generateTicketCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -14,6 +15,16 @@ function generateTicketCode() {
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get("x-forwarded-for") || "unknown";
+    const { success } = rateLimit(ip, 3, 60000); // 3 requests per minute
+
+    if (!success) {
+      return NextResponse.json(
+        { error: "لقد تجاوزت الحد المسموح. يرجى الانتظار دقيقة والمحاولة مجدداً." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { name, phone, email, subject, message } = body;
 

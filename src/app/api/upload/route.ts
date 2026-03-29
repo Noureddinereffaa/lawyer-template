@@ -15,6 +15,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "File size exceeds 5MB limit" }, { status: 400 });
     }
 
+    // Validate file type (whitelist)
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json({ 
+        error: "نوع الملف غير مدعوم. يرجى رفع صور (JPEG/PNG/WEBP) أو مستندات (PDF/Word) فقط." 
+      }, { status: 415 });
+    }
+
     const supabase = createAdminSupabaseClient();
     
     // Generate unique filename

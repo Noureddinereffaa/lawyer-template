@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/auth-guard";
 
 /**
  * GET /api/admin/tickets/meta?ticketId=xxx
@@ -7,6 +8,9 @@ import { createAdminSupabaseClient } from "@/lib/supabase/server";
  * to pre-load the selected ticket when deep-linked from appointments.
  */
 export async function GET(req: Request) {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(req.url);
     const ticketId = searchParams.get("ticketId");

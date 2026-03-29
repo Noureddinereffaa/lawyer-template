@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/auth-guard";
 import { clientConfig } from "../../../../../config/client.config";
 import { sendBookingConfirmation, sendOnlineMeetingConfirmation } from "@/lib/notifications";
 
@@ -13,6 +14,9 @@ function generateMeetingCode(): string {
  * Sends a confirmation email to the client if an email is provided.
  */
 export async function POST(req: Request) {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
     const body = await req.json();
     const { type, date, timeSlot, clientName, clientPhone, clientEmail, wilaya, notes, meetingMode } = body;

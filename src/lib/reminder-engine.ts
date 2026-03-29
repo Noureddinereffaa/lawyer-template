@@ -14,7 +14,7 @@
 
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { sendMeetingReminder } from "@/lib/notifications";
-import { clientConfig } from "../../config/client.config";
+import { clientConfig } from "../../config/client.config"; // fallback only
 
 // ── In-memory throttle ────────────────────────────────────────────────────────
 // Prevents checking the DB more than once every THROTTLE_MS across all requests.
@@ -52,7 +52,21 @@ async function processReminders(): Promise<{ sent: number }> {
   const now = new Date();
   let sentCount = 0;
 
-  // ── 24-hour reminders ─────────────────────────────────────────────────────
+  // ── جلب أنواع الاستشارات الحية من DB (مزامنة مع إعدادات لوحة التحكم) ─────
+  let liveConsultationTypes = clientConfig.booking.consultationTypes;
+  try {
+    const { data: dbSettings } = await supabase
+      .from("settings")
+      .select("config_data")
+      .single();
+    const live = dbSettings?.config_data?.booking?.consultationTypes;
+    if (Array.isArray(live) && live.length > 0) {
+      liveConsultationTypes = live;
+    }
+  } catch {
+    // DB not available — fall back to static config
+  }
+
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split("T")[0];
@@ -68,7 +82,7 @@ async function processReminders(): Promise<{ sent: number }> {
   if (appts24h) {
     for (const appt of appts24h) {
       try {
-        const label = clientConfig.booking.consultationTypes
+        const label = liveConsultationTypes
           .find((c) => c.id === appt.type)?.label || appt.type;
 
         await sendMeetingReminder({
@@ -114,7 +128,7 @@ async function processReminders(): Promise<{ sent: number }> {
       if (slotHour !== targetHour) continue;
 
       try {
-        const label = clientConfig.booking.consultationTypes
+        const label = liveConsultationTypes
           .find((c) => c.id === appt.type)?.label || appt.type;
 
         await sendMeetingReminder({

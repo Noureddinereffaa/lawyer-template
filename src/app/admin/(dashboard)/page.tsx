@@ -115,10 +115,10 @@ export default function AdminDashboard() {
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.75rem", fontSize: "0.9rem" }}>
                 <span style={{ fontWeight: 700 }}>معدل الاستجابة للمذكرات</span>
-                <span style={{ color: "var(--primary)", fontWeight: 800 }}>92%</span>
+                <span style={{ color: "var(--primary)", fontWeight: 800 }}>{data.tickets.responseRate}%</span>
               </div>
               <div style={{ height: "8px", background: "rgba(0,0,0,0.05)", borderRadius: "4px", overflow: "hidden" }}>
-                <div style={{ width: "92%", height: "100%", background: "var(--primary)" }}></div>
+                <div style={{ width: `${data.tickets.responseRate}%`, height: "100%", background: "var(--primary)" }}></div>
               </div>
             </div>
 

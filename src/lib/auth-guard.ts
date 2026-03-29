@@ -1,0 +1,39 @@
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { NextResponse } from "next/server";
+
+/**
+ * ── Admin API Auth Guard ──────────────────────────────────────────────────────
+ *
+ * يتحقق من أن الطلب الوارد صادر من مستخدم مُصادَق عليه عبر Supabase Auth.
+ * يُستخدَم في بداية كل Admin API Route Handler لضمان عدم الوصول بدون جلسة.
+ *
+ * الاستخدام:
+ *   const authError = await requireAuth();
+ *   if (authError) return authError;
+ *
+ * @returns null إذا كان المستخدم مصرّحاً له
+ * @returns NextResponse(401) إذا لم يكن مصادَقاً عليه
+ */
+export async function requireAuth(): Promise<NextResponse | null> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized — يجب تسجيل الدخول للوصول لهذه الوظيفة" },
+        { status: 401 }
+      );
+    }
+
+    return null; // ✅ مصرَّح — يُكمَل تنفيذ الـ handler
+  } catch (err) {
+    console.error("[requireAuth] Auth check failed:", err);
+    return NextResponse.json(
+      { error: "Auth check failed" },
+      { status: 500 }
+    );
+  }
+}
