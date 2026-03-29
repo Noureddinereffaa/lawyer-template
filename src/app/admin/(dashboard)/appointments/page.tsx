@@ -1,8 +1,26 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { createClient } from "@/lib/supabase/client";
+
+// ─── Consultation types (matches booking API) ─────────────────────────
+const CONSULTATION_TYPES = [
+  { id: "consultation", label: "استشارة قانونية عامة" },
+  { id: "family", label: "قانون الأسرة" },
+  { id: "commercial", label: "قانون تجاري" },
+  { id: "real_estate", label: "عقارات وعقود" },
+  { id: "labor", label: "قانون العمل" },
+  { id: "criminal", label: "قضايا الجنائية" },
+];
+
+const EMPTY_FORM = {
+  clientName: "", clientPhone: "", clientEmail: "",
+  wilaya: "", type: "consultation",
+  date: "", timeSlot: "", meetingMode: "in_person",
+  notes: "",
+};
 
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -17,9 +35,21 @@ export default function AppointmentsPage() {
   // Bulk Selection State
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  // Modal State
+  // Detail Modal State
   const [selectedAppointment, setSelectedAppointment] = useState<any | null>(null);
   const [savingNotes, setSavingNotes] = useState(false);
+
+  // ── Add Appointment Modal ──────────────────────────────────────────────
+  const [showAddModal, setShowAddModal]   = useState(false);
+  const [addForm, setAddForm]             = useState({ ...EMPTY_FORM });
+  const [adding, setAdding]               = useState(false);
+  const [addResult, setAddResult]         = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  // ── Memo (Ticket) button ─────────────────────────────────────────
+  const [memoLoading, setMemoLoading] = useState<string | null>(null); // appointmentId loading state
+
+  const router = useRouter();
+
   const supabase = createClient();
 
   useEffect(() => { fetchAppointments(); }, []);
@@ -133,37 +163,119 @@ export default function AppointmentsPage() {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
+  const handleAddAppointment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdding(true);
+    setAddResult(null);
+    try {
+      const res = await fetch("/api/admin/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: addForm.type,
+          date: addForm.date,
+          timeSlot: addForm.timeSlot,
+          clientName: addForm.clientName,
+          clientPhone: addForm.clientPhone,
+          clientEmail: addForm.clientEmail || undefined,
+          wilaya: addForm.wilaya || undefined,
+          notes: addForm.notes || undefined,
+          meetingMode: addForm.meetingMode,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const emailNote = addForm.clientEmail
+          ? " تم إرسال إشعار للعميل عبر البريد الإلكتروني. ✉️"
+          : " (لم يُدخل بريد العميل، لم يُرسل إشعار)";
+        setAddResult({ type: "success", msg: `✅ تمت إضافة الموعد بنجاح!${emailNote}` });
+        setAddForm({ ...EMPTY_FORM });
+        fetchAppointments();
+      } else {
+        setAddResult({ type: "error", msg: data.error || "حدث خطأ غير متوقع." });
+      }
+    } catch {
+      setAddResult({ type: "error", msg: "تعذر الاتصال بالسيرفر." });
+    }
+    setAdding(false);
+  };
+
+  // ── Open or Create a Memo (Ticket) for an appointment client ─────────────
+  const openMemo = async (a: any) => {
+    setMemoLoading(a.id);
+    try {
+      const res = await fetch("/api/admin/tickets/from-appointment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          appointmentId: a.id,
+          clientName: a.client_name,
+          clientPhone: a.client_phone,
+          clientEmail: a.client_email,
+          appointmentType: a.type,
+          appointmentDate: a.date,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ticketId) {
+        router.push(`/admin/messages?ticket=${data.ticketId}`);
+      } else {
+        alert(data.error || "حدث خطأ غير متوقع.");
+      }
+    } catch {
+      alert("تعذر الاتصال بالسيرفر.");
+    }
+    setMemoLoading(null);
+  };
+
+  // ── Open Add Modal pre-filled for a Follow-up Appointment ────────────────
+  const openFollowUp = (a: any) => {
+    setAddForm({
+      ...EMPTY_FORM,
+      clientName: a.client_name || "",
+      clientPhone: a.client_phone || "",
+      clientEmail: a.client_email || "",
+      wilaya: a.wilaya || "",
+      type: a.type || "consultation",
+      meetingMode: "online", // Default follow-up to online
+    });
+    setAddResult(null);
+    setShowAddModal(true);
+  };
+
   return (
     <>
       <style>{`
-        .meeting-badge { display: inline-flex; align-items: center; gap: .3rem; padding: .25rem .6rem; border-radius: 20px; font-size: .75rem; font-weight: 700; }
-        .meeting-badge.online { background: rgba(66,153,225,.1); color: #3182ce; }
-        .meeting-badge.in_person { background: rgba(72,187,120,.1); color: #38a169; }
-        .meeting-status-badge { display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .5rem; border-radius: 6px; font-size: .72rem; font-weight: 600; }
-        .meeting-status-badge.waiting { background: #fefcbf; color: #975a16; }
-        .meeting-status-badge.live { background: #fed7d7; color: #c53030; animation: blink 1.5s infinite; }
-        .meeting-status-badge.ended { background: #c6f6d5; color: #276749; }
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.5} }
-        .action-btns { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; }
-        .code-display { font-family: monospace; font-weight: 800; font-size: .85rem; color: #1a3c5e; background: #f0f4f8; padding: .2rem .5rem; border-radius: 6px; direction: ltr; letter-spacing: 2px; }
+        .meeting-badge { display: inline-flex; align-items: center; gap: .4rem; padding: .4rem .75rem; border-radius: 50px; font-size: .8rem; font-weight: 700; boxShadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .meeting-badge.online { background: rgba(13, 35, 64, 0.05); color: var(--primary); border: 1px solid rgba(13, 35, 64, 0.1); }
+        .meeting-badge.in_person { background: rgba(201, 168, 76, 0.1); color: var(--secondary); border: 1px solid rgba(201, 168, 76, 0.2); }
+        .meeting-status-badge { display: inline-flex; align-items: center; gap: .4rem; padding: .3rem .6rem; border-radius: 8px; font-size: .75rem; font-weight: 700; }
+        .meeting-status-badge.waiting { background: #fffaf0; color: #b7791f; border: 1px solid #fbd38d; }
+        .meeting-status-badge.live { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; animation: blink 1.5s infinite; }
+        .meeting-status-badge.ended { background: #f0fff4; color: #2f855a; border: 1px solid #9ae6b4; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.6} }
+        .action-btns { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+        .code-display { font-family: monospace; font-weight: 800; font-size: .9rem; color: var(--primary); background: rgba(13,35,64,0.05); padding: .3rem .6rem; border-radius: 8px; direction: ltr; letter-spacing: 2px; }
         
         .status-select {
-          padding: 0.35rem 1.8rem 0.35rem 0.6rem;
-          border-radius: 6px;
+          padding: 0.5rem 2rem 0.5rem 0.75rem;
+          border-radius: 10px;
           border: 1px solid var(--border);
-          font-weight: 700;
+          font-weight: 800;
           font-size: 0.85rem;
           cursor: pointer;
-          background-color: var(--surface);
+          background-color: #fff;
           outline: none;
           appearance: none;
-          background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%232b6cb0%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+          background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23c9a84c%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
           background-repeat: no-repeat;
-          background-position: left 0.6rem center;
-          background-size: 10px auto;
+          background-position: left 0.75rem center;
+          background-size: 12px auto;
+          transition: var(--transition);
         }
-        .status-select.pending { color: #dd6b20; border-color: #fbd38d; background-color: #fffff0; }
-        .status-select.confirmed { color: #319795; border-color: #81e6d9; background-color: #e6fffa; }
+        .status-select:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .status-select.pending { color: #b7791f; border-color: #fbd38d; background-color: #fffaf0; }
+        .status-select.confirmed { color: #2c7a7b; border-color: #81e6d9; background-color: #e6fffa; }
         .status-select.completed { color: #2f855a; border-color: #9ae6b4; background-color: #f0fff4; }
         .status-select.cancelled { color: #c53030; border-color: #feb2b2; background-color: #fff5f5; }
 
@@ -196,15 +308,137 @@ export default function AppointmentsPage() {
         .info-val { font-weight: 700; font-size: 0.95rem; }
         
         .bulk-actions-bar {
-          display: flex; gap: 0.5rem; padding: 0.75rem 1rem; background: rgba(49, 130, 206, 0.05); 
-          border: 1px solid rgba(49, 130, 206, 0.2); border-radius: 8px; align-items: center; 
-          margin-bottom: 1rem; flex-wrap: wrap; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-          animation: slide-down 0.25s ease-out;
+          display: flex; gap: 0.75rem; padding: 1.25rem 1.5rem; background: rgba(13, 35, 64, 0.03); 
+          border: 1px solid rgba(13, 35, 64, 0.1); border-radius: 15px; align-items: center; 
+          margin-bottom: 2rem; flex-wrap: wrap; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+          animation: slide-down 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        @keyframes slide-down { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .data-table-wrap {
+          background: #fff;
+          border-radius: 20px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+          border: 1px solid var(--border);
+          overflow: hidden;
+        }
+        @keyframes slide-down { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
+        .form-label { font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); }
+        .mode-toggle { display: flex; gap: 0.75rem; }
+        .mode-btn { flex: 1; padding: 0.7rem; border-radius: 10px; border: 2px solid var(--border); background: var(--surface); cursor: pointer; font-size: 0.9rem; font-weight: 700; transition: all 0.2s; text-align: center; }
+        .mode-btn.active { border-color: var(--primary); background: rgba(26,60,94,0.06); color: var(--primary); }
+        .result-banner { padding: 0.9rem 1.25rem; border-radius: 10px; font-size: 0.9rem; font-weight: 700; margin-top: 1rem; }
+        .result-banner.success { background: #f0fff4; color: #2f855a; border: 1px solid #9ae6b4; }
+        .result-banner.error { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
+        @media (max-width: 640px) { .form-row { grid-template-columns: 1fr; } }
       `}</style>
 
-      {/* ─── MODAL ───────────────────────────────────────────────────────── */}
+      {/* ─── ADD APPOINTMENT MODAL ────────────────────────────────────────── */}
+      {showAddModal && (
+        <div className="modal-overlay" onClick={() => { setShowAddModal(false); setAddResult(null); }}>
+          <div className="modal-content" style={{ maxWidth: 640 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary)" }}>📅 إضافة موعد جديد</h3>
+              <button onClick={() => { setShowAddModal(false); setAddResult(null); }}
+                style={{ background: "transparent", border: "none", fontSize: "1.5rem", cursor: "pointer", color: "var(--text-secondary)" }}>×</button>
+            </div>
+            <form onSubmit={handleAddAppointment} style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+              <div className="modal-body">
+
+                {/* Client Info */}
+                <div style={{ marginBottom: "1.25rem", padding: "1rem", background: "rgba(26,60,94,0.03)", borderRadius: "10px", border: "1px solid rgba(26,60,94,0.08)" }}>
+                  <div style={{ fontWeight: 800, fontSize: "0.9rem", color: "var(--primary)", marginBottom: "1rem" }}>👤 معلومات العميل</div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="form-label">الاسم الكامل *</label>
+                      <input className="form-control" required placeholder="أحمد بن يوسف" value={addForm.clientName} onChange={e => setAddForm(f => ({ ...f, clientName: e.target.value }))} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">رقم الهاتف *</label>
+                      <input className="form-control" required placeholder="0550000000" dir="ltr" value={addForm.clientPhone} onChange={e => setAddForm(f => ({ ...f, clientPhone: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="form-label">البريد الإلكتروني (للإشعار)</label>
+                      <input className="form-control" type="email" placeholder="client@email.com" dir="ltr" value={addForm.clientEmail} onChange={e => setAddForm(f => ({ ...f, clientEmail: e.target.value }))} />
+                      <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>إذا أُدخل، سيُرسل إشعار تلقائي للعميل</span>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">الولاية</label>
+                      <input className="form-control" placeholder="الجزائر العاصمة" value={addForm.wilaya} onChange={e => setAddForm(f => ({ ...f, wilaya: e.target.value }))} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Appointment Details */}
+                <div style={{ marginBottom: "1.25rem", padding: "1rem", background: "rgba(201,168,76,0.04)", borderRadius: "10px", border: "1px solid rgba(201,168,76,0.12)" }}>
+                  <div style={{ fontWeight: 800, fontSize: "0.9rem", color: "var(--secondary)", marginBottom: "1rem" }}>📋 تفاصيل الموعد</div>
+                  <div className="form-group">
+                    <label className="form-label">نوع الاستشارة *</label>
+                    <select className="form-control" required value={addForm.type} onChange={e => setAddForm(f => ({ ...f, type: e.target.value }))}>
+                      {CONSULTATION_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="form-label">التاريخ *</label>
+                      <input className="form-control" type="date" required value={addForm.date} onChange={e => setAddForm(f => ({ ...f, date: e.target.value }))} min={new Date().toISOString().split("T")[0]} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">الوقت *</label>
+                      <input className="form-control" type="time" required value={addForm.timeSlot} onChange={e => setAddForm(f => ({ ...f, timeSlot: e.target.value }))} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Meeting Mode */}
+                <div style={{ marginBottom: "1.25rem" }}>
+                  <div className="form-label" style={{ marginBottom: "0.75rem" }}>نوع الجلسة *</div>
+                  <div className="mode-toggle">
+                    <button type="button" className={`mode-btn ${addForm.meetingMode === "in_person" ? "active" : ""}`}
+                      onClick={() => setAddForm(f => ({ ...f, meetingMode: "in_person" }))}>
+                      🏛️ حضوري
+                    </button>
+                    <button type="button" className={`mode-btn ${addForm.meetingMode === "online" ? "active" : ""}`}
+                      onClick={() => setAddForm(f => ({ ...f, meetingMode: "online" }))}>
+                      💻 أونلاين
+                    </button>
+                  </div>
+                  {addForm.meetingMode === "online" && (
+                    <div style={{ marginTop: "0.75rem", padding: "0.75rem", background: "rgba(49,130,206,0.06)", borderRadius: "8px", fontSize: "0.85rem", color: "#2b6cb0", fontWeight: 600 }}>
+                      💡 سيُولَّد رمز اجتماع Jitsi تلقائياً ويُرسَل للعميل مع الإشعار إذا أُدخل بريده الإلكتروني.
+                    </div>
+                  )}
+                </div>
+
+                {/* Notes */}
+                <div className="form-group">
+                  <label className="form-label">ملاحظات إضافية (اختياري)</label>
+                  <textarea className="form-control" rows={3} placeholder="معلومات إضافية عن القضية أو طلب العميل..." value={addForm.notes} onChange={e => setAddForm(f => ({ ...f, notes: e.target.value }))} style={{ resize: "vertical" }} />
+                </div>
+
+                {addResult && (
+                  <div className={`result-banner ${addResult.type}`}>
+                    {addResult.msg}
+                  </div>
+                )}
+              </div>
+
+              <div className="modal-footer">
+                <button type="button" className="btn btn-outline btn-sm" onClick={() => { setShowAddModal(false); setAddResult(null); }}>
+                  إلغاء
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={adding} style={{ minWidth: "160px" }}>
+                  {adding ? "جاري الإضافة..." : "✅ إضافة الموعد"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODAL (Details) ─────────────────────────────────────────────── */}
       {selectedAppointment && (
         <div className="modal-overlay" onClick={() => setSelectedAppointment(null)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
@@ -293,9 +527,15 @@ export default function AppointmentsPage() {
           <h2 style={{ fontSize: "1.4rem", marginBottom: "0.2rem" }}>📅 إدارة المواعيد</h2>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>لوحة تحكم متقدمة لتتبع، فلترة، وإدارة المواعيد وجلسات الاستشارة.</p>
         </div>
-        <button className="btn btn-outline btn-sm" onClick={fetchAppointments} disabled={loading}>
-          {loading ? "جاري التحديث..." : "تحديث 🔄"}
-        </button>
+        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+          <button className="btn btn-outline btn-sm" onClick={fetchAppointments} disabled={loading}>
+            {loading ? "جاري التحديث..." : "تحديث 🔄"}
+          </button>
+          <button className="btn btn-primary" onClick={() => { setAddResult(null); setShowAddModal(true); }}
+            style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            ➕ موعد جديد
+          </button>
+        </div>
       </div>
 
       {selectedIds.length > 0 && (
@@ -357,53 +597,56 @@ export default function AppointmentsPage() {
 
         <div style={{ overflowX: "auto", minHeight: "50vh" }}>
           <table className="data-table">
-            <thead>
+            <thead style={{ background: "rgba(26,60,94,0.03)" }}>
               <tr>
-                <th style={{ width: "40px", textAlign: "center" }}>
+                <th style={{ width: "60px", textAlign: "center", padding: "1.5rem" }}>
                   <input type="checkbox" 
                     checked={filteredAppointments.length > 0 && selectedIds.length === filteredAppointments.length} 
                     onChange={toggleSelectAll} 
                   />
                 </th>
-                <th>العميل</th>
-                <th>التاريخ والوقت</th>
-                <th>المقابلة</th>
-                <th>الحالة</th>
-                <th>إجراءات الإدارة</th>
+                <th>👤 العميل</th>
+                <th>📅 التاريخ والوقت</th>
+                <th>📍 المقابلة</th>
+                <th>⚖️ الحالة</th>
+                <th>⚡ إجراءات</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} style={{ textAlign: "center", padding: "4rem" }}>
-                  <div style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>⏳</div>
-                  <div style={{ color: "var(--text-secondary)" }}>جاري مزامنة المواعيد...</div>
+                <tr><td colSpan={6} style={{ textAlign: "center", padding: "6rem" }}>
+                  <div className="animate-pulse" style={{ fontSize: "1.2rem", color: "var(--primary)", fontWeight: 700 }}>جاري مزامنة المواعيد مع السيرفر...</div>
                 </td></tr>
               ) : filteredAppointments.length === 0 ? (
-                <tr><td colSpan={6} style={{ textAlign: "center", padding: "4rem", color: "var(--text-secondary)" }}>
-                  <div style={{ fontSize: "2rem", marginBottom: "1rem", opacity: 0.5 }}>📅</div>
-                  <div>لا توجد مواعيد مطابقة لخيارات الفلترة الحالية</div>
+                <tr><td colSpan={6} style={{ textAlign: "center", padding: "6rem", color: "var(--text-secondary)" }}>
+                  <div style={{ fontSize: "3rem", marginBottom: "1.5rem", opacity: 0.3 }}>📅</div>
+                  <div style={{ fontWeight: 600 }}>لا توجد مواعيد حالياً في هذا القسم.</div>
                 </td></tr>
               ) : (
                 filteredAppointments.map(a => (
-                  <tr key={a.id} style={{ opacity: a.is_archived ? 0.6 : 1, background: selectedIds.includes(a.id) ? "rgba(49,130,206,0.03)" : undefined }}>
+                  <tr key={a.id} className="hover-lift" style={{ 
+                    opacity: a.is_archived ? 0.6 : 1, 
+                    background: selectedIds.includes(a.id) ? "rgba(201,168,76,0.04)" : undefined,
+                    transition: "var(--transition)"
+                  }}>
                     <td style={{ textAlign: "center", verticalAlign: "middle" }}>
                       <input type="checkbox" checked={selectedIds.includes(a.id)} onChange={() => toggleSelectRow(a.id)} />
                     </td>
                     {/* Client */}
-                    <td>
-                      <div style={{ fontWeight: 700, color: "var(--primary)" }}>{a.client_name}</div>
-                      <div style={{ fontSize: ".78rem", color: "var(--text-secondary)", marginTop: "0.2rem" }} dir="ltr">{a.client_phone}</div>
+                    <td style={{ padding: "1.5rem 1rem" }}>
+                      <div style={{ fontWeight: 800, color: "var(--primary)", fontSize: "1.05rem" }}>{a.client_name}</div>
+                      <div style={{ fontSize: ".85rem", color: "var(--text-secondary)", marginTop: "0.3rem", fontWeight: 600 }} dir="ltr">{a.client_phone}</div>
                       {a.admin_notes && (
-                        <div style={{ fontSize: "0.75rem", background: "var(--bg)", display: "inline-block", padding: "0.15rem 0.4rem", borderRadius: "4px", color: "var(--secondary)", marginTop: "0.4rem", border: "1px solid rgba(0,0,0,0.05)" }}>
-                          📝 يوجد ملاحظات
+                        <div style={{ fontSize: "0.7rem", background: "rgba(201,168,76,0.1)", display: "inline-flex", alignItems: "center", gap: "0.3rem", padding: "0.2rem 0.6rem", borderRadius: "50px", color: "var(--secondary)", marginTop: "0.6rem", fontWeight: 800 }}>
+                          📝 ملاحظات داخلية
                         </div>
                       )}
                     </td>
                     
                     {/* Date */}
                     <td>
-                      <div style={{ fontWeight: 700 }}>{a.date ? format(new Date(a.date), "dd MMM yyyy", { locale: ar }) : "-"}</div>
-                      <div style={{ fontSize: ".8rem", color: "var(--text-secondary)" }}>{a.time_slot}</div>
+                      <div style={{ fontWeight: 800, color: "var(--text)" }}>{a.date ? format(new Date(a.date), "dd MMM yyyy", { locale: ar }) : "-"}</div>
+                      <div style={{ fontSize: ".85rem", color: "var(--text-secondary)", marginTop: "0.2rem", fontWeight: 600 }}>{a.time_slot}</div>
                     </td>
                     
                     {/* Meeting Mode & Type */}
@@ -452,6 +695,14 @@ export default function AppointmentsPage() {
                         <button className="btn btn-outline btn-sm" onClick={() => setSelectedAppointment(a)} style={{ fontSize: "0.8rem", padding: "0.3rem 0.6rem" }}>
                           👁️ تفاصيل
                         </button>
+                        <button 
+                          className="btn btn-outline btn-sm" 
+                          onClick={() => openMemo(a)} 
+                          disabled={memoLoading === a.id}
+                          style={{ fontSize: "0.8rem", padding: "0.3rem 0.6rem", borderColor: "var(--secondary)", color: "var(--secondary)" }}
+                        >
+                          {memoLoading === a.id ? "⏱️ جاري..." : "📨 متصل"}
+                        </button>
                         
                         {/* Session Actions for Online Meetings */}
                         {a.meeting_mode === "online" && a.meeting_status === "waiting" && (
@@ -471,6 +722,12 @@ export default function AppointmentsPage() {
                               إنهاء
                             </button>
                           </>
+                        )}
+                        {a.meeting_mode === "online" && a.meeting_status === "ended" && (
+                          <button className="btn btn-primary" onClick={() => openFollowUp(a)}
+                            style={{ padding: ".3rem .6rem", fontSize: ".8rem", background: "var(--primary)", borderColor: "var(--primary)" }}>
+                            📅 موعد إلحاقي
+                          </button>
                         )}
                       </div>
                     </td>

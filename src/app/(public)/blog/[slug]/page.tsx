@@ -10,11 +10,12 @@ interface Params {
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const { slug } = await params;
   const supabase = await createServerSupabaseClient();
   const { data } = await supabase
     .from("articles")
     .select("title, excerpt, cover_image")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .single();
 
   if (!data) return { title: "مقال غير موجود" };
@@ -31,11 +32,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function ArticlePage({ params }: Params) {
+  const { slug } = await params;
   const supabase = await createServerSupabaseClient();
   const { data: article } = await supabase
     .from("articles")
     .select("*")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .eq("published", true)
     .single();
 
@@ -61,11 +63,11 @@ export default async function ArticlePage({ params }: Params) {
             <span className="badge">{article.category || "عام"}</span>
             <span style={{ color: "var(--text-secondary)", fontSize: ".9rem" }}>📅 {date}</span>
           </div>
-          <h1 style={{ fontSize: "2.5rem", color: "var(--primary)", lineHeight: 1.4, marginBottom: "1.5rem" }}>
+          <h1 style={{ fontSize: "clamp(1.8rem, 6vw, 2.5rem)", color: "var(--primary)", lineHeight: 1.4, marginBottom: "1.5rem" }}>
             {article.title}
           </h1>
           {article.excerpt && (
-            <p style={{ fontSize: "1.2rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
+            <p style={{ fontSize: "clamp(1rem, 4vw, 1.2rem)", color: "var(--text-secondary)", lineHeight: 1.6 }}>
               {article.excerpt}
             </p>
           )}
@@ -77,7 +79,7 @@ export default async function ArticlePage({ params }: Params) {
           </div>
         )}
 
-        <div className="article-content" style={{ fontSize: "1.1rem", lineHeight: 1.8, color: "var(--text)" }}>
+        <div className="article-content" style={{ fontSize: "clamp(1rem, 3vw, 1.1rem)", lineHeight: 1.8, color: "var(--text)" }}>
           {article.content.split('\n').map((paragraph: string, i: number) => {
             if (!paragraph.trim()) return <br key={i} />;
             if (paragraph.startsWith('## ')) return <h2 key={i} style={{ marginTop: "2rem", marginBottom: "1rem", color: "var(--primary)" }}>{paragraph.replace('## ', '')}</h2>;

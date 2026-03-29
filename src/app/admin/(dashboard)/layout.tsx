@@ -45,35 +45,82 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       />
 
       {/* Sidebar */}
-      <aside className={`admin-sidebar ${sidebarOpen ? "open" : ""}`}>
-        <div className="admin-logo">
-          👨‍⚖️ لوحة التحكم
-          <span>{officeName}</span>
+      <aside className={`admin-sidebar glass ${sidebarOpen ? "open" : ""}`} style={{ 
+        borderLeft: "1px solid var(--border)",
+        background: "rgba(13, 35, 64, 0.95)",
+        backdropFilter: "blur(20px)"
+      }}>
+        <div className="admin-logo" style={{ padding: "2rem", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "1.4rem" }}>⚖️</div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontWeight: 800, color: "#fff", letterSpacing: "0.5px" }}>{officeName}</span>
+            <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.5)", fontWeight: 600 }}>لوحة التحكم الذكية</span>
+          </div>
         </div>
-        <nav className="admin-nav">
-          <Link href="/admin" onClick={closeSidebar} className={`admin-nav-item ${pathname === '/admin' ? 'active' : ''}`}>🏠 نظرة عامة</Link>
-          <Link href="/admin/appointments" onClick={closeSidebar} className={`admin-nav-item ${pathname?.includes('/appointments') ? 'active' : ''}`}>📅 المواعيد والحجوزات</Link>
-          <Link href="/admin/messages" onClick={closeSidebar} className={`admin-nav-item ${pathname?.includes('/messages') ? 'active' : ''}`}>📨 رسائل المكتب</Link>
-          <Link href="/admin/articles" onClick={closeSidebar} className={`admin-nav-item ${pathname?.includes('/articles') ? 'active' : ''}`}>📰 المقالات</Link>
-          <Link href="/admin/settings" onClick={closeSidebar} className={`admin-nav-item ${pathname?.includes('/settings') ? 'active' : ''}`}>⚙️ الإعدادات</Link>
+        <nav className="admin-nav" style={{ padding: "1.5rem 1rem" }}>
+          {[
+            { href: "/admin", label: "نظرة عامة", icon: "🏠" },
+            { href: "/admin/appointments", label: "المواعيد والحجوزات", icon: "📅" },
+            { href: "/admin/messages", label: "رسائل المكتب", icon: "📨" },
+            { href: "/admin/articles", label: "المقالات والتدوينات", icon: "📰" },
+            { href: "/admin/settings", label: "إعدادات المنصة", icon: "⚙️" },
+          ].map((item) => {
+            const isActive = item.href === "/admin" ? pathname === "/admin" : pathname?.includes(item.href);
+            return (
+              <Link 
+                key={item.href}
+                href={item.href} 
+                onClick={closeSidebar} 
+                className={`admin-nav-item ${isActive ? 'active' : ''}`}
+                style={{
+                  display: "flex", alignItems: "center", gap: "0.75rem",
+                  padding: "0.85rem 1.25rem", borderRadius: "12px",
+                  marginBottom: "0.5rem", transition: "var(--transition)",
+                  color: isActive ? "#fff" : "rgba(255,255,255,0.6)",
+                  background: isActive ? "var(--secondary)" : "transparent",
+                  fontWeight: isActive ? 700 : 500,
+                  boxShadow: isActive ? "0 4px 12px rgba(201,168,76, 0.3)" : "none"
+                }}
+              >
+                <span style={{ fontSize: "1.2rem" }}>{item.icon}</span>
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
-        <div style={{ marginTop: "auto", padding: "1.5rem" }}>
-          <button className="btn btn-outline btn-full" style={{ borderColor: "rgba(255,255,255,.2)", color: "#fff" }}>
-            تسجيل الخروج
+        <div style={{ marginTop: "auto", padding: "1.5rem", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+          <button className="btn btn-outline btn-full hover-lift" style={{ 
+            borderColor: "rgba(255,255,255,.15)", color: "#fff",
+            background: "rgba(255,255,255,0.05)", borderRadius: "10px"
+          }}>
+            🚪 تسجيل الخروج
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="admin-main">
-        <header className="admin-topbar">
-          <h2 className="admin-page-title">مرحباً، {lawyerName.split(" ")[1] || "أستاذ"}</h2>
-          <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: ".5rem" }}>
-              <div style={{ width: 10, height: 10, background: "#48bb78", borderRadius: "50%" }} />
-              <span style={{ fontSize: ".85rem", fontWeight: 700, color: "var(--text-secondary)" }}>النظام يعمل</span>
+      <main className="admin-main" style={{ background: "#f8fafc" }}>
+        <header className="admin-topbar glass" style={{ 
+          background: "rgba(255,255,255,0.8)", 
+          borderBottom: "1px solid var(--border)",
+          padding: "1rem 2.5rem"
+        }}>
+          <div>
+            <h2 className="admin-page-title" style={{ margin: 0, fontSize: "1.25rem", color: "var(--primary)" }}>
+              مرحباً، <span style={{ fontWeight: 800 }}>{lawyerName.split(" ").slice(1).join(" ") || lawyerName}</span> 👋
+            </h2>
+            <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginTop: "0.2rem" }}>
+              {new Date().toLocaleDateString("ar-DZ", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </div>
-            <Link href="/" target="_blank" className="btn btn-primary btn-sm">🌍 عرض الموقع</Link>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+            <div className="animate-pulse" style={{ display: "flex", alignItems: "center", gap: ".5rem", background: "rgba(72,187,120,0.1)", padding: "0.4rem 0.8rem", borderRadius: "20px" }}>
+              <div style={{ width: 8, height: 8, background: "#48bb78", borderRadius: "50%" }} />
+              <span style={{ fontSize: ".75rem", fontWeight: 700, color: "#2f855a" }}>النظام متصل</span>
+            </div>
+            <Link href="/" target="_blank" className="btn btn-primary btn-sm hover-lift" style={{ borderRadius: "8px" }}>
+              🌍 عرض الموقع
+            </Link>
           </div>
         </header>
 

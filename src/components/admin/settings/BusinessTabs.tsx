@@ -75,6 +75,13 @@ export function SEOTab({ config, updateConfig }: { config: ClientConfig, updateC
     <div className="card">
       <div className="section-title">🔍 تحسين محركات البحث (SEO)</div>
       <div className="field-full">
+        <div className="form-group" style={{ background: "rgba(201,168,76,0.05)", padding: "1rem", borderRadius: "10px", borderLeft: "4px solid var(--secondary)", marginBottom: "1.5rem" }}>
+          <label className="form-label" style={{ color: "var(--primary)" }}>رابط نطاق المنصة (Domain URL) المربوط 🌐</label>
+          <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>هذا الرابط سيتم استخدامه في رسائل الإيميل (مثل رابط غرف الاجتماعات ومتابعة التذاكر). تأكد من إدخاله مع https:// (مثال: https://mohamy.dz)</div>
+          <input className="form-control" dir="ltr" placeholder="https://yourdomain.com" value={config.seo.siteUrl} onChange={e => updateConfig("seo.siteUrl", e.target.value)} />
+        </div>
+      </div>
+      <div className="field-full">
         <div className="form-group">
           <label className="form-label">عنوان الموقع الرئيسي</label>
           <input className="form-control" value={config.seo.defaultTitle} onChange={e => updateConfig("seo.defaultTitle", e.target.value)} />

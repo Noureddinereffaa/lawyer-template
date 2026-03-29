@@ -16,18 +16,23 @@
   --text-primary:   #1a1a2e;
   --text-secondary: #555577;
   --border:         #e2e8f0;
-  --radius:         8px;
+  --radius:         12px;
   --font-heading:   'Amiri', serif;
   --font-body:      'Tajawal', sans-serif;
 
-  /* Shadows */
-  --shadow-sm:  0 1px 3px rgba(0,0,0,.08);
-  --shadow-md:  0 4px 16px rgba(0,0,0,.10);
-  --shadow-lg:  0 8px 32px rgba(0,0,0,.14);
-  --shadow-xl:  0 16px 48px rgba(0,0,0,.18);
+  /* Premium Shadows */
+  --shadow-sm:  0 2px 4px rgba(0,0,0,.04);
+  --shadow-md:  0 10px 25px -5px rgba(0,0,0,.08), 0 8px 10px -6px rgba(0,0,0,.05);
+  --shadow-lg:  0 20px 25px -5px rgba(0,0,0,.1), 0 10px 10px -5px rgba(0,0,0,.04);
+  --shadow-xl:  0 25px 50px -12px rgba(0,0,0,.25);
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-blur: blur(12px);
 
   /* Transitions */
-  --transition: 0.25s ease;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Z-index */
   --z-nav:    100;
@@ -163,19 +168,37 @@ p  { color: var(--text-secondary); line-height: 1.8; }
 .btn-sm { padding: .5rem 1.1rem; font-size: .875rem; }
 .btn-full { width: 100%; justify-content: center; }
 
-/* ── Cards ─────────────────────────────────────────────────────── */
+/* ── Cards & Glass ─────────────────────────────────────────────── */
 .card {
   background: var(--surface);
-  border-radius: calc(var(--radius) * 1.5);
-  padding: 2rem;
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius);
+  padding: 2.5rem;
+  box-shadow: var(--shadow-md);
   border: 1px solid var(--border);
-  transition: all var(--transition);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
 }
 .card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-4px);
-  border-color: rgba(26,60,94,.15);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-6px);
+  border-color: var(--primary-light);
+}
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}
+
+.glass-dark {
+  background: rgba(13, 35, 64, 0.7);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
 }
 
 /* ── Form Elements ──────────────────────────────────────────────── */
@@ -207,24 +230,24 @@ p  { color: var(--text-secondary); line-height: 1.8; }
 .form-error { font-size: .82rem; color: #e53e3e; }
 textarea.form-control { resize: vertical; min-height: 120px; }
 
-/* ── Badge / Tag ────────────────────────────────────────────────── */
-.tag {
-  display: inline-block;
-  padding: .25rem .75rem;
-  border-radius: 50px;
-  font-size: .8rem;
-  font-weight: 600;
-  background: rgba(26,60,94,.1);
-  color: var(--primary);
-}
+/* ── Animation Classes ──────────────────────────────────────────── */
+.animate-fade-in { animation: fadeIn 0.8s ease-out forwards; }
+.animate-slide-up { animation: slideUp 0.8s ease-out forwards; }
+.animate-float { animation: float 6s ease-in-out infinite; }
 
-/* ── Status dots ─────────────────────────────────────────────────── */
-.status { display: inline-flex; align-items: center; gap: .4rem; font-size: .85rem; font-weight: 700; }
-.status::before { content: ''; width: 8px; height: 8px; border-radius: 50%; }
-.status-pending::before  { background: #f6ad55; }
-.status-confirmed::before{ background: #48bb78; }
-.status-cancelled::before{ background: #fc8181; }
-.status-completed::before{ background: #667eea; }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+  100% { transform: translateY(0px); }
+}
 
 /* ── Hero Section ─────────────────────────────────────────────── */
 .hero {
@@ -397,7 +420,7 @@ textarea.form-control { resize: vertical; min-height: 120px; }
   margin-top: 1.5rem;
 }
 .step-dot {
-  width: 32px; height: 32px; border-radius: 50%;
+  width: 36px; height: 36px; border-radius: 50%;
   background: rgba(255,255,255,.25);
   color: rgba(255,255,255,.7);
   display: flex; align-items: center; justify-content: center;

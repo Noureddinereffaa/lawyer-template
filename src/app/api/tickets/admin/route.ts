@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { sendTicketReplyAlertEmail } from "@/lib/notifications";
 
-// GET: Fetch all tickets or messages for a specific ticket
+// GET: Fetch tickets with filtering or messages for a specific ticket
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const ticketId = searchParams.get("ticketId");
+    const status = searchParams.get("status");
+    const isArchived = searchParams.get("archived");
+    const search = searchParams.get("search");
     
     const supabase = createAdminSupabaseClient();
 
@@ -21,18 +24,23 @@ export async function GET(request: Request) {
       if (error) throw error;
       return NextResponse.json({ messages }, { status: 200 });
     } else {
-      // Fetch all tickets
-      const { data: tickets, error } = await supabase
-        .from("support_tickets")
-        .select("*")
-        .order("created_at", { ascending: false });
+      // Fetch tickets with filters
+      let query = supabase.from("support_tickets").select("*");
+      
+      if (status) query = query.eq("status", status);
+      if (isArchived !== null) query = query.eq("is_archived", isArchived === "true");
+      if (search) {
+        query = query.or(`client_name.ilike.%${search}%,ticket_code.ilike.%${search}%,subject.ilike.%${search}%`);
+      }
+      
+      const { data: tickets, error } = await query.order("created_at", { ascending: false });
         
       if (error) throw error;
       return NextResponse.json({ tickets }, { status: 200 });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("GET /api/tickets/admin", error);
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Internal error" }, { status: 500 });
   }
 }
 
@@ -40,7 +48,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { ticketId, message } = body;
+    const { ticketId, message, attachmentUrl } = body;
 
     const supabase = createAdminSupabaseClient();
 
@@ -50,7 +58,8 @@ export async function POST(request: Request) {
       .insert([{
         ticket_id: ticketId,
         sender: "lawyer",
-        message: message
+        message: message || "📎 مرفق",
+        attachment_url: attachmentUrl || null
       }])
       .select("*")
       .single();
@@ -75,30 +84,59 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true, message: newMessage }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("POST /api/tickets/admin", error);
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Internal error" }, { status: 500 });
   }
 }
 
-// PATCH: Close a ticket
+// PATCH: Update ticket status or archive status
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const { ticketId, status } = body;
+    const { ticketId, status, isArchived } = body;
 
     const supabase = createAdminSupabaseClient();
+    const updates: any = { updated_at: new Date().toISOString() };
+    
+    if (status !== undefined) updates.status = status;
+    if (isArchived !== undefined) updates.is_archived = isArchived;
 
     const { error } = await supabase
       .from("support_tickets")
-      .update({ status: status })
+      .update(updates)
       .eq("id", ticketId);
 
     if (error) throw error;
 
     return NextResponse.json({ success: true }, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("PATCH /api/tickets/admin", error);
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Internal error" }, { status: 500 });
+  }
+}
+
+// DELETE: Permanent deletion of a ticket
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const ticketId = searchParams.get("ticketId");
+    if (!ticketId) return NextResponse.json({ error: "Missing ticketId" }, { status: 400 });
+
+    const supabase = createAdminSupabaseClient();
+
+    // Cascade delete is handled by DB if configured, otherwise we do it here
+    // First delete messages
+    await supabase.from("ticket_messages").delete().eq("ticket_id", ticketId);
+    
+    // Then delete ticket
+    const { error } = await supabase.from("support_tickets").delete().eq("id", ticketId);
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error: any) {
+    console.error("DELETE /api/tickets/admin", error);
+    return NextResponse.json({ error: error.message || "Internal error" }, { status: 500 });
   }
 }

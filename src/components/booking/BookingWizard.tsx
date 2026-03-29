@@ -125,42 +125,64 @@ export default function BookingWizard() {
   return (
     <div className="booking-wrapper">
       <style>{`
-        .animate-fade-in { animation: fadeIn 0.4s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .mode-selector { display: flex; gap: 1rem; margin-bottom: 2rem; }
-        .mode-card {
-          flex: 1; padding: 1.5rem; border-radius: 12px; cursor: pointer;
-          border: 2px solid var(--border); text-align: center;
-          transition: all .25s ease; background: var(--surface);
+        .booking-wrapper {
+          background: var(--surface);
+          border-radius: var(--radius);
+          box-shadow: var(--shadow-xl);
+          overflow: hidden;
+          border: 1px solid var(--border);
         }
-        .mode-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,.08); }
-        .mode-card.active { border-color: var(--primary); background: rgba(26,60,94,.06); }
+        .mode-selector { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
+        .mode-card {
+          flex: 1; padding: 1.5rem; border-radius: var(--radius); cursor: pointer;
+          border: 2px solid var(--border); text-align: center;
+          transition: var(--transition); background: var(--surface);
+        }
+        .mode-card:hover { border-color: var(--primary); transform: translateY(-4px); box-shadow: var(--shadow-md); }
+        .mode-card.active { border-color: var(--primary); background: rgba(26,60,94,.06); box-shadow: inset 0 0 0 1px var(--primary); }
         .mode-card .mode-icon { font-size: 2.5rem; margin-bottom: .75rem; }
         .mode-card .mode-title { font-size: 1.1rem; font-weight: 700; color: var(--primary); margin-bottom: .25rem; }
         .mode-card .mode-desc { font-size: .82rem; color: var(--text-secondary); }
+        
+        .date-btn {
+          flex-shrink: 0; width: 85px; padding: 1rem 0.5rem;
+          border-radius: var(--radius); border: 2px solid var(--border);
+          background: var(--surface); color: var(--text-primary);
+          transition: var(--transition); text-align: center; cursor: pointer;
+        }
+        .date-btn:hover { border-color: var(--primary-light); transform: translateY(-2px); }
+        .date-btn.selected { 
+          background: var(--primary); border-color: var(--primary); color: #fff;
+          box-shadow: 0 8px 16px rgba(26,60,94, 0.2);
+        }
+
         .meeting-code-box {
-          background: linear-gradient(135deg, #1a3c5e 0%, #2a5c8e 100%);
-          color: #fff; border-radius: 16px; padding: 2rem; text-align: center;
-          margin: 1.5rem 0;
+          background: linear-gradient(135deg, var(--primary) 0%, #0d2340 100%);
+          color: #fff; border-radius: 20px; padding: 2.5rem; text-align: center;
+          margin: 2rem 0; box-shadow: var(--shadow-lg);
         }
         .meeting-code-digits {
-          display: flex; justify-content: center; gap: .6rem; margin: 1.25rem 0;
+          display: flex; justify-content: center; gap: .75rem; margin: 1.5rem 0;
         }
         .meeting-code-digit {
-          width: 48px; height: 56px; border-radius: 10px;
-          background: rgba(255,255,255,.15); backdrop-filter: blur(10px);
+          width: 52px; height: 60px; border-radius: 12px;
+          background: rgba(255,255,255,.1); backdrop-filter: blur(8px);
           display: flex; align-items: center; justify-content: center;
-          font-size: 1.6rem; font-weight: 800; letter-spacing: 1px;
+          font-size: 1.8rem; font-weight: 800; letter-spacing: 1px;
           border: 1px solid rgba(255,255,255,.2);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        .time-slots { display: flex; flex-wrap: wrap; gap: .5rem; }
+        .time-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.75rem; }
         .time-slot-btn {
-          padding: .5rem 1rem; border: 1.5px solid var(--border); border-radius: 8px;
-          background: var(--surface); cursor: pointer; font-size: .9rem;
-          transition: all .2s;
+          padding: 0.75rem; border: 2px solid var(--border); border-radius: var(--radius);
+          background: var(--surface); cursor: pointer; font-size: 0.95rem; font-weight: 600;
+          transition: var(--transition); text-align: center;
         }
-        .time-slot-btn:hover { border-color: var(--primary); }
-        .time-slot-btn.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .time-slot-btn:hover { border-color: var(--primary); color: var(--primary); background: rgba(26,60,94, 0.02); }
+        .time-slot-btn.selected { 
+          background: var(--primary); color: #fff; border-color: var(--primary);
+          box-shadow: 0 4px 12px rgba(26,60,94, 0.2);
+        }
       `}</style>
 
       <div className="booking-header">
@@ -217,17 +239,10 @@ export default function BookingWizard() {
                   const isSelected = selectedDate && isSameDay(d, selectedDate);
                   return (
                     <button key={i} type="button" onClick={() => setSelectedDate(d)}
-                      style={{
-                        flexShrink: 0, width: 80, padding: ".75rem .25rem",
-                        borderRadius: "var(--radius)", border: "1.5px solid",
-                        borderColor: isSelected ? "var(--primary)" : "var(--border)",
-                        background: isSelected ? "var(--primary)" : "var(--surface)",
-                        color: isSelected ? "#fff" : "var(--text-primary)",
-                        transition: "all var(--transition)", textAlign: "center", cursor: "pointer"
-                      }}>
-                      <div style={{ fontSize: ".8rem", marginBottom: ".2rem", opacity: .8 }}>{format(d, "EEEE", { locale: ar })}</div>
-                      <div style={{ fontSize: "1.2rem", fontWeight: 700 }}>{format(d, "dd")}</div>
-                      <div style={{ fontSize: ".8rem", opacity: .8 }}>{format(d, "MMM", { locale: ar })}</div>
+                      className={`date-btn ${isSelected ? 'selected' : ''}`}>
+                      <div style={{ fontSize: ".8rem", marginBottom: ".3rem", opacity: .8 }}>{format(d, "EEEE", { locale: ar })}</div>
+                      <div style={{ fontSize: "1.4rem", fontWeight: 800 }}>{format(d, "dd")}</div>
+                      <div style={{ fontSize: ".85rem", fontWeight: 600 }}>{format(d, "MMM", { locale: ar })}</div>
                     </button>
                   );
                 })}

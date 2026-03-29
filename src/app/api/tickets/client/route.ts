@@ -48,9 +48,10 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { ticketId, message } = body;
+    const { ticketId, message, attachmentUrl } = body;
 
-    if (!ticketId || !message) {
+    // Must have at least a message or an attachment
+    if (!ticketId || (!message && !attachmentUrl)) {
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
     }
 
@@ -61,7 +62,8 @@ export async function POST(request: Request) {
       .insert([{
         ticket_id: ticketId,
         sender: "client",
-        message: message
+        message: message || "📎 مرفق",
+        attachment_url: attachmentUrl || null
       }])
       .select("*")
       .single();

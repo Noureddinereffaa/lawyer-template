@@ -12,6 +12,8 @@ const navLinks = [
   { href: "/about",     label: "من نحن" },
   { href: "/services",  label: "الخدمات" },
   { href: "/blog",      label: "المدونة" },
+  { href: "/track",     label: "متابعة تذكرة" },
+  { href: "/showcase",  label: "عرض المشروع" },
   { href: "/meeting",   label: "قاعة الاجتماعات" },
   { href: "/contact",   label: "اتصل بنا" },
   { href: "/booking",   label: "احجز موعد" },
@@ -32,70 +34,98 @@ export default function Header({ config }: HeaderProps) {
       <style>{`
         .site-header {
           position: fixed; top: 0; right: 0; left: 0; z-index: var(--z-nav);
-          transition: all 0.3s ease;
+          transition: var(--transition);
+          padding: 1rem 0;
+          /* Default semi-transparent background to ensure visibility on light pages */
+          background: rgba(13, 35, 64, 0.75);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border-bottom: 1px solid rgba(255,255,255,0.05);
         }
         .site-header.scrolled {
-          background: rgba(26,60,94,.97);
-          backdrop-filter: blur(12px);
-          box-shadow: 0 2px 20px rgba(0,0,0,.2);
-          padding: 0;
+          background: rgba(13, 35, 64, 0.95);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          box-shadow: 0 10px 30px -10px rgba(0,0,0,0.4);
+          padding: 0.5rem 0;
+          border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        .site-header:not(.scrolled) { background: transparent; }
         .header-inner {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 1rem 0;
-          transition: padding 0.3s ease;
+          position: relative; z-index: 1002;
         }
-        .site-header.scrolled .header-inner { padding: .6rem 0; }
         .header-logo {
-          display: flex; align-items: center; gap: .75rem;
-          color: #fff; font-family: var(--font-heading); font-size: 1.2rem; font-weight: 700;
+          display: flex; align-items: center; gap: 1rem;
+          color: #fff; font-family: var(--font-heading); font-size: 1.3rem; font-weight: 700;
+          transition: transform 0.3s ease;
         }
+        .header-logo:hover { transform: scale(1.02); }
         .logo-icon {
-          width: 44px; height: 44px; border-radius: 10px;
+          width: 48px; height: 48px; border-radius: 12px;
           background: linear-gradient(135deg, var(--secondary), var(--secondary-light));
           display: flex; align-items: center; justify-content: center;
-          font-size: 1.3rem;
+          font-size: 1.5rem;
+          box-shadow: 0 8px 16px rgba(201,168,76, 0.3);
         }
-        .header-nav { display: flex; align-items: center; gap: .25rem; }
+        .header-nav { display: flex; align-items: center; gap: 0.5rem; }
         .nav-link {
-          padding: .5rem .875rem; border-radius: 6px;
-          color: rgba(255,255,255,.85); font-size: .95rem; font-weight: 500;
-          transition: all .2s ease; position: relative;
+          padding: 0.6rem 1rem; border-radius: 8px;
+          color: rgba(255,255,255, 0.8); font-size: 0.95rem; font-weight: 600;
+          transition: var(--transition);
         }
-        .nav-link:hover { color: #fff; background: rgba(255,255,255,.1); }
+        .nav-link:hover { color: #fff; background: rgba(255,255,255, 0.1); }
+        .nav-link.active { color: var(--secondary-light); }
+        
         .nav-link.booking {
-          background: var(--secondary); color: #fff; font-weight: 700;
-          margin-right: .5rem; padding: .5rem 1.2rem;
+          background: var(--secondary); color: #fff; 
+          margin-right: 1rem; padding: 0.7rem 1.5rem;
+          box-shadow: 0 4px 15px rgba(201,168,76, 0.4);
+          animation: pulse-glow 3s infinite;
         }
-        .nav-link.booking:hover { background: var(--secondary-light); transform: translateY(-1px); }
+        @keyframes pulse-glow {
+          0% { box-shadow: 0 0 0 0 rgba(201,168,76, 0.7); }
+          70% { box-shadow: 0 0 0 10px rgba(201,168,76, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(201,168,76, 0); }
+        }
+        .nav-link.booking:hover { 
+          background: var(--secondary-light); 
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(201,168,76, 0.5);
+        }
+
         .menu-toggle {
-          display: none; flex-direction: column; gap: 5px;
-          padding: .4rem; cursor: pointer;
+          display: none; flex-direction: column; gap: 6px;
+          padding: 0.5rem; cursor: pointer; z-index: 1001;
         }
         .menu-toggle span {
-          display: block; width: 24px; height: 2px;
+          display: block; width: 28px; height: 2px;
           background: #fff; border-radius: 2px;
-          transition: all .3s ease;
+          transition: var(--transition);
         }
-        .menu-toggle.open span:nth-child(1){ transform: rotate(45deg) translate(5px, 5px); }
-        .menu-toggle.open span:nth-child(2){ opacity: 0; }
-        .menu-toggle.open span:nth-child(3){ transform: rotate(-45deg) translate(5px, -5px); }
+        .menu-toggle.open span:nth-child(1){ transform: rotate(45deg) translate(6px, 6px); }
+        .menu-toggle.open span:nth-child(2){ opacity: 0; transform: translateX(-10px); }
+        .menu-toggle.open span:nth-child(3){ transform: rotate(-45deg) translate(6px, -6px); }
 
-        .mobile-menu {
-          display: none; flex-direction: column;
-          background: rgb(26,60,94);
-          padding: 1rem 1.5rem 1.5rem;
+        .mobile-overlay {
+          position: fixed; inset: 0; background: rgba(13, 35, 64, 0.98);
+          backdrop-filter: blur(10px);
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          gap: 2rem; z-index: 1000; overflow-y: auto; overflow-x: hidden;
+          opacity: 0; visibility: hidden; transition: var(--transition); padding: 5rem 1rem 2rem;
         }
-        .mobile-menu.open { display: flex; }
+        .mobile-overlay.open { opacity: 1; visibility: visible; }
         .mobile-nav-link {
-          padding: .85rem 0; color: rgba(255,255,255,.85);
-          font-size: 1rem; border-bottom: 1px solid rgba(255,255,255,.08);
-          transition: color .2s;
+          font-size: 1.5rem; font-weight: 700; color: #fff;
+          font-family: var(--font-heading);
+          transition: var(--transition);
+          transform: translateY(20px); opacity: 0;
         }
-        .mobile-nav-link:hover { color: var(--secondary); }
+        .mobile-overlay.open .mobile-nav-link { 
+          transform: translateY(0); opacity: 1;
+        }
+        .mobile-nav-link:hover { color: var(--secondary); transform: scale(1.1); }
 
-        @media (max-width: 900px) {
+        @media (max-width: 1024px) {
           .header-nav { display: none; }
           .menu-toggle { display: flex; }
         }
@@ -136,17 +166,21 @@ export default function Header({ config }: HeaderProps) {
           </div>
         </div>
 
-        <div className={`mobile-menu${isMenuOpen ? " open" : ""}`}>
-          {navLinks.map((l) => (
+        <div className={`mobile-overlay${isMenuOpen ? " open" : ""}`}>
+          {navLinks.map((l, i) => (
             <Link
               key={l.href}
               href={l.href}
               className="mobile-nav-link"
               onClick={() => setIsMenuOpen(false)}
+              style={{ transitionDelay: `${i * 0.05}s` }}
             >
               {l.label}
             </Link>
           ))}
+          <div style={{ marginTop: "2rem", color: "rgba(255,255,255,0.4)", fontSize: "0.9rem" }}>
+            ⚖️ حقوق الطبع محفوظة {new Date().getFullYear()}
+          </div>
         </div>
       </header>
     </>

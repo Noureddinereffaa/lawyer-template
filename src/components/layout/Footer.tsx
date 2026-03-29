@@ -9,13 +9,44 @@ export default function Footer({ config }: FooterProps) {
   const year = new Date().getFullYear();
 
   return (
-    <footer style={{
-      background: "linear-gradient(180deg, #0d2340 0%, #091929 100%)",
-      color: "rgba(255,255,255,.75)",
-      padding: "4rem 0 0",
+    <footer className="animate-fade-in" style={{
+      background: "linear-gradient(180deg, #0d2340 0%, #071321 100%)",
+      color: "rgba(255,255,255,.7)",
+      padding: "5rem 0 0",
+      borderTop: "1px solid rgba(255,255,255,0.05)"
     }}>
       <div className="container">
-        <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr 1fr 1.4fr", gap: "3rem", paddingBottom: "3rem" }}>
+        <div className="footer-grid">
+          <style>{`
+            .footer-grid {
+              display: grid;
+              grid-template-columns: 1.5fr 0.8fr 0.8fr 1.2fr;
+              gap: 4rem;
+              padding-bottom: 4rem;
+            }
+            @media (max-width: 1024px) {
+              .footer-grid { grid-template-columns: 1fr 1fr; gap: 3rem; }
+            }
+            @media (max-width: 640px) {
+              .footer-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+            }
+            .footer-heading {
+              color: #fff;
+              font-family: var(--font-heading);
+              margin-bottom: 1.5rem;
+              font-size: 1.2rem;
+              font-weight: 700;
+              position: relative;
+              padding-bottom: 0.75rem;
+            }
+            .footer-heading::after {
+              content: '';
+              position: absolute;
+              bottom: 0; right: 0;
+              width: 30px; height: 2px;
+              background: var(--secondary);
+            }
+          `}</style>
 
           {/* Brand */}
           <div>
@@ -53,9 +84,7 @@ export default function Footer({ config }: FooterProps) {
 
           {/* Quick Links */}
           <div>
-            <h4 style={{ color: "#fff", fontFamily: "var(--font-heading)", marginBottom: "1.25rem", fontSize: "1.05rem" }}>
-              روابط سريعة
-            </h4>
+            <h4 className="footer-heading">روابط سريعة</h4>
             {[
               { href: "/",         label: "الرئيسية" },
               { href: "/about",    label: "من نحن" },
@@ -63,6 +92,7 @@ export default function Footer({ config }: FooterProps) {
               { href: "/blog",     label: "المدونة" },
               { href: "/booking",  label: "حجز موعد" },
               { href: "/contact",  label: "اتصل بنا" },
+              { href: "/showcase", label: "المشروع للمحامين 🚀" },
             ].map((l) => (
               <Link key={l.href} href={l.href} style={footerLink}>
                 ← {l.label}
@@ -72,9 +102,7 @@ export default function Footer({ config }: FooterProps) {
 
           {/* Services */}
           <div>
-            <h4 style={{ color: "#fff", fontFamily: "var(--font-heading)", marginBottom: "1.25rem", fontSize: "1.05rem" }}>
-              تخصصاتنا
-            </h4>
+            <h4 className="footer-heading">تخصصاتنا</h4>
             {config.specialties.slice(0, 6).map((s) => (
               <Link key={s.id} href="/services" style={footerLink}>
                 ← {s.title}
@@ -84,9 +112,7 @@ export default function Footer({ config }: FooterProps) {
 
           {/* Contact */}
           <div>
-            <h4 style={{ color: "#fff", fontFamily: "var(--font-heading)", marginBottom: "1.25rem", fontSize: "1.05rem" }}>
-              معلومات التواصل
-            </h4>
+            <h4 className="footer-heading">معلومات التواصل</h4>
             <div style={{ display: "flex", flexDirection: "column", gap: ".85rem" }}>
               <div style={contactItem}>
                 <span style={contactIcon}>📍</span>
@@ -147,10 +173,11 @@ const socialBtn: React.CSSProperties = {
   transition: "background .2s",
 };
 const footerLink: React.CSSProperties = {
-  display: "block",
+  display: "inline-block",
   color: "rgba(255,255,255,.65)",
   fontSize: ".9rem",
-  marginBottom: ".55rem",
+  marginBottom: ".25rem",
+  padding: "0.4rem 0",
   transition: "color .2s",
 };
 const contactItem: React.CSSProperties = {
