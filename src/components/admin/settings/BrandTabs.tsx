@@ -106,3 +106,27 @@ export function ThemeTab({ config, updateConfig }: { config: ClientConfig, updat
     </>
   );
 }
+
+export function SecurityTab({ config, updateConfig }: { config: ClientConfig, updateConfig: (path: string, val: any) => void }) {
+  return (
+    <div className="card">
+      <div className="section-title">🔐 الأمان ووضعية الديمو</div>
+      <div className="field-full">
+        <label style={{ display: "flex", alignItems: "center", gap: "1rem", cursor: "pointer", background: "rgba(201,168,76,0.1)", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(201,168,76,0.3)" }}>
+          <input 
+            type="checkbox" 
+            checked={!!config.isDemoMode} 
+            onChange={e => updateConfig("isDemoMode", e.target.checked)}
+            style={{ width: "24px", height: "24px", accentColor: "var(--secondary)" }}
+          />
+          <div>
+            <div style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--primary)" }}>تفعيل وضع القالب الديمو (Bypass Login)</div>
+            <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "0.2rem" }}>
+              عند تفعيل هذا الخيار، سيتمكن أي شخص من الدخول للوحة التحكم والمشاهدة بدون طلب كلمة مرور. مفيد جداً عند عرض القالب للجمهور.
+            </div>
+          </div>
+        </label>
+      </div>
+    </div>
+  );
+}

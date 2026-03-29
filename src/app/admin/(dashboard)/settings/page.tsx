@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { clientConfig as defaultConfig, ClientConfig } from "../../../../../config/client.config";
 
-import { IdentityTab, ThemeTab } from "@/components/admin/settings/BrandTabs";
+import { IdentityTab, ThemeTab, SecurityTab } from "@/components/admin/settings/BrandTabs";
 import { ContactTab, SocialTab, SEOTab, HoursTab } from "@/components/admin/settings/BusinessTabs";
 import { ServicesTab, BookingTab, StatsTab } from "@/components/admin/settings/ServiceTabs";
 import { ContentTab, TestimonialsTab } from "@/components/admin/settings/ContentTabs";
@@ -21,6 +21,7 @@ const TABS = [
   { id: "social",       label: "الشبكات",         icon: "🌐" },
   { id: "seo",          label: "SEO",             icon: "🔍" },
   { id: "booking",      label: "نظام الحجز",      icon: "📅" },
+  { id: "security",     label: "الأمان والديمو",   icon: "🔐" },
 ];
 
 function deepMergeConfig(db: any): ClientConfig {
@@ -261,6 +262,7 @@ export default function SettingsPage() {
       <div className={`tab-panel${activeTab === "social"    ? " active" : ""}`}><SocialTab       config={config} updateConfig={updateConfig} /></div>
       <div className={`tab-panel${activeTab === "seo"       ? " active" : ""}`}><SEOTab          config={config} updateConfig={updateConfig} /></div>
       <div className={`tab-panel${activeTab === "booking"   ? " active" : ""}`}><BookingTab      config={config} updateConfig={updateConfig} /></div>
+      <div className={`tab-panel${activeTab === "security"  ? " active" : ""}`}><SecurityTab     config={config} updateConfig={updateConfig} /></div>
 
       {/* ── Save Bar ──────────────────────────────────────────────────────── */}
       <div className="save-bar">

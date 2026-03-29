@@ -2,7 +2,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest, type NextFetchEvent } from 'next/server'
 import { triggerReminderCheck } from '@/lib/reminder-engine'
 
-export default async function proxy(request: NextRequest, event: NextFetchEvent) {
+export default async function middleware(request: NextRequest, event: NextFetchEvent) {
   // Lazy reminder check — use waitUntil to prevent Vercel Edge from killing the background promise
   triggerReminderCheck(event);
   let supabaseResponse = NextResponse.next({
@@ -38,13 +38,19 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Protected routes condition — Supabase Auth only, no bypass allowed
+  // ── Protected Routes ──
   if (request.nextUrl.pathname.startsWith('/admin') && !request.nextUrl.pathname.startsWith('/admin/login')) {
     if (!user) {
-      // no user, redirect to login
-      const url = request.nextUrl.clone()
-      url.pathname = '/admin/login'
-      return NextResponse.redirect(url)
+      // Check if global Demo Mode is enabled
+      const { data: settingsData } = await supabase.from('settings').select('config_data').single();
+      const isDemoMode = settingsData?.config_data?.isDemoMode === true;
+      
+      if (!isDemoMode) {
+        // no user and not in demo mode, redirect to login
+        const url = request.nextUrl.clone()
+        url.pathname = '/admin/login'
+        return NextResponse.redirect(url)
+      }
     }
   }
 

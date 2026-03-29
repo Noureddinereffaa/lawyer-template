@@ -22,10 +22,16 @@ export async function requireAuth(): Promise<NextResponse | null> {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Unauthorized — يجب تسجيل الدخول للوصول لهذه الوظيفة" },
-        { status: 401 }
-      );
+      // Check if global Demo Mode is enabled
+      const { data: settingsData } = await supabase.from('settings').select('config_data').single();
+      const isDemoMode = settingsData?.config_data?.isDemoMode === true;
+      
+      if (!isDemoMode) {
+        return NextResponse.json(
+          { error: "Unauthorized — يجب تسجيل الدخول للوصول لهذه الوظيفة" },
+          { status: 401 }
+        );
+      }
     }
 
     return null; // ✅ مصرَّح — يُكمَل تنفيذ الـ handler

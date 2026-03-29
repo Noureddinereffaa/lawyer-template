@@ -27,6 +27,7 @@ export async function getSettings(): Promise<ClientConfig> {
 
     return {
       // ── Flat keys ────────────────────────────────────────────────
+      isDemoMode:  db.isDemoMode  ?? defaultConfig.isDemoMode,
       lawyerName:  db.lawyerName  ?? defaultConfig.lawyerName,
       officeName:  db.officeName  ?? defaultConfig.officeName,
       tagline:     db.tagline     ?? defaultConfig.tagline,
